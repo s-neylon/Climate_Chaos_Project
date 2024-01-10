@@ -1,0 +1,681 @@
+---
+title: "Flood-BDS Analysis 1-3-24"
+output: html_document
+date: "2024-01-03"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(here)
+library(tidyverse)
+library(stringr)
+# library(scales)
+
+```
+
+# Notes
+
+##(1-2-24)
+
+Lots of ChatGPT driven flood threshold analysis.
+
+NOTE: I ran all the analysis on a version of the data which eliminated zeroes.
+
+##(1-4-24)
+
+I have created a series of copies of the "flood-BDS_analysis" file, in order to try out different things.
+
+NOTE: As the file title says (at the end) this version says that "serious floods" are defined as being at the 95th percentile of flooding damage per employee.
+
+This file is specifically for exploring IFECT models.
+
+I don't know how IFECT handles imbalanced panels - I think it might try to work with them, instead of deleting them, so I need to make sure and delete counties with missing 'emp' values.
+
+THERE WAS A MAJOR PROBLEM! I was accidentally creating a bunch of NA's in my group variable. Unfortunately, I've found that ChatGPT loves to use 'any()' in if_else statements, and doesn't take into account the vector lengths - something to be aware of in the future!
+
+I have now:
+  - Renamed the files with bad 'group' variables "BROKE_"
+  - Am now creating new versions, with fixed group.
+    - fect is done
+    - 95 threshold is done
+    - DONE: 99 threshold (one with data "_1-3-24")
+
+# Import
+
+```{r}
+
+flood_df <- read_csv(here("data/merge/flood-BDS_data.csv"),
+                     col_types = cols(
+  year = col_double(),
+  st = col_character(),
+  cty = col_character(),
+  firms = col_double(),
+  estabs = col_double(),
+  emp = col_double(),
+  denom = col_double(),
+  estabs_entry = col_double(),
+  estabs_entry_rate = col_double(),
+  estabs_exit = col_double(),
+  estabs_exit_rate = col_double(),
+  job_creation = col_double(),
+  job_creation_births = col_double(),
+  job_creation_continuers = col_double(),
+  job_creation_rate_births = col_double(),
+  job_creation_rate = col_double(),
+  job_destruction = col_double(),
+  job_destruction_deaths = col_double(),
+  job_destruction_continuers = col_double(),
+  job_destruction_rate_deaths = col_double(),
+  job_destruction_rate = col_double(),
+  net_job_creation = col_double(),
+  net_job_creation_rate = col_double(),
+  reallocation_rate = col_double(),
+  firmdeath_firms = col_double(),
+  firmdeath_estabs = col_double(),
+  firmdeath_emp = col_double(),
+  FIPS_5 = col_character(),
+  prop_dmg = col_double(),
+  pre_96 = col_double()
+                     ))
+
+```
+
+# Flooding Threshold
+
+I want to take a data-driven approach to determining what counts as a serious flood.
+
+I am using Damage per Employee as my metric, which may not be ideal, but it has been difficult to get county population data.
+
+[Analysis suggested by ChatGPT!]
+
+```{r eval=FALSE}
+
+# Focus on non-zero data
+flood_nonzero <- flood_df %>% filter(dmg_perEMP > 0)
+
+```
+
+## Histogram
+
+```{r eval=FALSE}
+
+# Assuming your data is in a dataframe named 'flood_data'
+flood_nonzero %>%
+  ggplot(aes(x = dmg_perEMP)) +
+  geom_histogram(bins = 30, fill = "blue", color = "black") +
+  labs(title = "Distribution of Damage per Employee",
+       x = "Damage per Employee",
+       y = "Frequency")
+
+
+```
+
+## Stats Summary
+
+```{r eval=FALSE}
+
+flood_nonzero %>%
+  summarise(Minimum = min(dmg_perEMP, na.rm = TRUE),
+            Maximum = max(dmg_perEMP, na.rm = TRUE),
+            Mean = mean(dmg_perEMP, na.rm = TRUE),
+            Median = median(dmg_perEMP, na.rm = TRUE),
+            SD = sd(dmg_perEMP, na.rm = TRUE))
+
+
+```
+
+## ChatGPT Visual
+
+```{r eval=FALSE}
+
+# Define a sequence of percentiles from 1st to 99th in 1% increments
+percentile_seq <- seq(0.01, 0.99, by = 0.01)
+
+# Function to calculate the number of unique counties above each percentile threshold
+count_treated_counties <- function(percentile, data, value_column, fips_column) {
+  threshold <- quantile(data[[value_column]], probs = percentile, na.rm = TRUE)
+  data %>% 
+    filter(!!sym(value_column) > threshold) %>% 
+    summarise(count = n_distinct(!!sym(fips_column)))
+}
+
+# Applying the function across all percentiles
+treated_counts <- map_df(percentile_seq, count_treated_counties, data = flood_nonzero, value_column = "dmg_perEMP", fips_column = "FIPS_5")
+
+# Adding percentile information to the results
+treated_counts <- treated_counts %>% 
+  mutate(percentile = percentile_seq * 100)
+
+# Plotting the results
+ggplot(treated_counts, aes(x = percentile, y = count)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Impact of Percentiles on the Number of Treated Counties",
+       x = "Percentile of Damage per Employee",
+       y = "Number of Treated Counties") +
+  theme_minimal()
+
+
+```
+
+```{r eval=FALSE}
+
+# Calculate the 90th percentile threshold
+threshold_90th <- quantile(flood_nonzero$dmg_perEMP, 0.9, na.rm = TRUE)
+
+# Filter the data for the top 10% (above the 90th percentile)
+top_damage_df <- flood_nonzero %>%
+  filter(dmg_perEMP > threshold_90th)
+
+# Visualize the distribution of damage per employee for these top counties
+ggplot(top_damage_df, aes(x = dmg_perEMP)) +
+  geom_histogram(bins = 30, fill = "blue", color = "black") +
+  scale_x_continuous(labels = comma) +  # Use comma formatting for the x-axis labels
+  theme_minimal() +
+  labs(title = "Distribution of Damage per Employee for Top 10% Counties",
+       x = "Damage per Employee",
+       y = "Frequency")
+
+
+
+```
+```{r eval=FALSE}
+
+# Log transform and histogram
+ggplot(top_damage_df, aes(x = dmg_perEMP)) +
+  geom_histogram(aes(y = after_stat(density)), bins = 30, fill = "blue", color = "black") +
+  scale_x_log10(labels = scales::comma) +
+  theme_minimal() +
+  labs(title = "Log Transformed Distribution of Damage per Employee for Top 10% Counties",
+       x = "Log of Damage per Employee",
+       y = "Density")
+
+
+```
+
+```{r eval=FALSE}
+
+ggplot(top_damage_df, aes(x = dmg_perEMP)) +
+  geom_density(fill = "blue", alpha = 0.5) +
+  scale_x_continuous(labels = scales::comma) +
+  theme_minimal() +
+  labs(title = "Density of Damage per Employee for Top 10% Counties",
+       x = "Damage per Employee",
+       y = "Density")
+
+
+```
+
+```{r eval=FALSE}
+
+# Adjust the binwidth as needed
+bin_width <- 1000  # Example bin width
+
+ggplot(top_damage_df, aes(x = dmg_perEMP)) +
+  geom_histogram(binwidth = bin_width, fill = "blue", color = "black") +
+  scale_x_continuous(labels = scales::comma) +
+  theme_minimal() +
+  labs(title = "Histogram of Damage per Employee for Top 10% Counties",
+       x = "Damage per Employee",
+       y = "Frequency")
+
+
+```
+
+### 80th Pct
+
+```{r eval=FALSE}
+
+# Calculate the 80th percentile threshold
+threshold_80th <- quantile(flood_nonzero$dmg_perEMP, 0.80, na.rm = TRUE)
+
+# Filter the data for the top 10% (above the 90th percentile)
+top20_damage_df <- flood_nonzero %>%
+  filter(dmg_perEMP > threshold_80th)
+
+ggplot(top20_damage_df, aes(x = dmg_perEMP)) +
+  geom_histogram(aes(y = after_stat(density)), bins = 30, fill = "blue", color = "black") +
+  scale_x_log10(labels = scales::comma) +
+  theme_minimal() +
+  labs(title = "Log Transformed Distribution of Damage per Employee for Top 20% Counties",
+       x = "Log of Damage per Employee",
+       y = "Density")
+
+
+
+```
+
+### Percentiles
+
+```{r eval=FALSE}
+
+# Calculate every 5th percentile for 'damage per employee'
+percentiles <- seq(0, 1, by = 0.05)
+percentile_values <- sapply(percentiles, function(p) quantile(flood_nonzero$dmg_perEMP, p, na.rm = TRUE))
+
+# Modified logarithm function that adds a small value to handle zeros
+log_mod <- function(x) log(x + 1e-6)
+
+# Calculate the modified logarithm of the percentile values
+log_percentile_values <- sapply(percentile_values, log_mod)
+
+# Combine into a dataframe and format to avoid scientific notation
+percentile_table <- data.frame(
+  Percentile = percentiles,
+  DamagePerEmployee = format(percentile_values, scientific = FALSE),
+  LogDamagePerEmployee = format(log_percentile_values, scientific = FALSE)
+)
+
+# Print the table
+print(percentile_table)
+
+```
+
+### Counties per Cutoff
+
+```{r eval=FALSE}
+
+
+# Define a function to count unique counties above a percentile threshold
+count_treated_counties <- function(percentile, df, dmg_column, fips_column) {
+  threshold <- quantile(df[[dmg_column]], probs = percentile, na.rm = TRUE)
+  df %>% 
+    filter(!!sym(dmg_column) > threshold) %>% 
+    summarise(count = n_distinct(!!sym(fips_column)))
+}
+
+# Create a sequence of percentiles from 80th to 100th (in steps of 1%)
+percentiles <- seq(0.80, 1.00, by = 0.01)
+
+# Apply the function to each percentile and collect the results
+treated_counts <- map_df(percentiles, count_treated_counties, df = flood_nonzero, dmg_column = "dmg_perEMP", fips_column = "FIPS_5")
+
+# Add percentile information to the results
+treated_counts <- treated_counts %>% 
+  mutate(Percentile = percentiles * 100)
+
+```
+
+```{r eval=FALSE}
+
+# Define a function to count unique counties and get damage per employee at a percentile threshold
+count_treated_counties_with_damage <- function(percentile, df, dmg_column, fips_column) {
+  threshold <- quantile(df[[dmg_column]], probs = percentile, na.rm = TRUE)
+  count <- df %>% 
+    filter(!!sym(dmg_column) > threshold) %>% 
+    summarise(count = n_distinct(!!sym(fips_column))) %>% 
+    pull(count)
+  
+  data.frame(
+    Percentile = percentile * 100,
+    DamagePerEmployee = threshold,
+    Count = count
+  )
+}
+
+# Create a sequence of percentiles from 80th to 100th (in steps of 1%)
+percentiles <- seq(0.80, 1.00, by = 0.01)
+
+# Apply the function to each percentile and collect the results
+treated_counts <- map_df(percentiles, count_treated_counties_with_damage, df = flood_nonzero, dmg_column = "dmg_perEMP", fips_column = "FIPS_5")
+
+# Print the resulting table
+print(treated_counts)
+
+
+```
+
+# Treatment Variable
+
+Based on the analysis above, the 99th percentile of flooding damage per employee (after dropping zeroes) is: 3909.65300
+
+ChatGPT again...
+
+## Flood Threshold
+
+```{r}
+
+# Define the threshold for a serious flood (replace 'your_threshold' with an actual value)
+serious_flood_threshold <- 3909.65300
+
+# Prepare the data
+flood_df <- flood_df %>%
+  # Define a serious flood
+  mutate(serious_flood = if_else(dmg_perEMP >= serious_flood_threshold, 1, 0)) %>%
+  # Group by county
+  group_by(FIPS_5) %>%
+  # Create the treatment variable
+  mutate(treatment = cummax(serious_flood)) %>%
+  ungroup()
+
+```
+
+## group variable
+
+```{r}
+
+flood_df <- flood_df %>%
+  arrange(FIPS_5, year) %>%
+  group_by(FIPS_5) %>%
+  mutate(
+    first_flood_year = ifelse(any(serious_flood == 1), min(year[serious_flood == 1]), NA_real_),
+    group = ifelse(is.na(first_flood_year), 0, first_flood_year)
+  ) %>%
+  ungroup()
+
+
+
+
+```
+
+## Check
+
+### Miss Counts
+
+```{r eval=FALSE}
+
+test_df %>% group_by(FIPS_5) %>% summarise(treated = max(serious_flood)) %>% filter(treated == 1) %>% nrow()
+
+```
+
+```{r eval=FALSE}
+
+treat_count <- tibble(
+  treated = test_df %>% group_by(FIPS_5) %>% summarise(treated = max(serious_flood)) %>% filter(treated == 1) %>% nrow(),
+  untreated = test_df %>% group_by(FIPS_5) %>% summarise(treated = max(serious_flood)) %>% filter(treated == 0) %>% nrow()
+)
+
+```
+
+### Group Variable
+
+```{r}
+
+check_group_assignments <- function(df, group_column, fips_column) {
+  # Calculate the count of counties for each unique value in the group column
+  group_counts <- df %>%
+    group_by(!!sym(group_column)) %>%
+    summarise(Count = n_distinct(!!sym(fips_column))) %>%
+    ungroup()
+
+  # Calculate the number of missing (NA) values in the group column
+  missing_count <- sum(is.na(df[[group_column]]))
+
+  # Calculate the number of counties with zero in the group column
+  zero_count <- sum(df[[group_column]] == 0, na.rm = TRUE)
+
+  # Combine the results into a single object
+  list(
+    group_counts = group_counts,
+    missing_count = missing_count,
+    zero_count = zero_count
+  )
+}
+
+# Usage
+
+
+
+```
+
+```{r eval=FALSE}
+
+# Assuming your dataframe is named flood_df and has the columns 'group' and 'FIPS_5'
+check_group_assignments(flood_df, group_column = "group", fips_column = "FIPS_5")
+
+```
+
+# Missing Data
+
+Try to get ChatGPT to help you with this! Either analyzing the data itself, or giving you code. The tricky thing is, you need to look at the data as a panel - so, which *counties* are missing a lot of data.
+
+Previously (and you should be able to find code for this), when ChatGPT was working on the factor model, it did some analysis and imputation to deal with missing data, so maybe start there!
+
+## % Missing
+
+ChatGPT code!
+
+```{r eval=FALSE}
+
+# Creating a column for the percentage of missing data per county
+miss_flood <- flood_df %>%
+  mutate(missing_values = rowSums(is.na(.))) %>%
+  mutate(missing_percentage = missing_values / ncol(.) * 100) %>%
+  group_by(FIPS_5) %>%
+  mutate(cty_miss = mean(missing_percentage)) %>%
+  ungroup()
+
+```
+
+```{r eval=FALSE}
+
+# Creating a column for the percentage of missing data per county, excluding Firm Death variables
+excluded_variables <- c('firmdeath_firms', 'firmdeath_estabs', 'firmdeath_emp')
+miss_flood_x <- miss_flood %>%
+  select(-all_of(excluded_variables)) %>%
+  mutate(missing_values_excluded = rowSums(is.na(.))) %>%
+  mutate(missing_percentage_excluded = missing_values_excluded / ncol(.) * 100) %>%
+  group_by(FIPS_5) %>%
+  mutate(cty_miss_noFirm = mean(missing_percentage_excluded)) %>%
+  ungroup()
+
+# Adding the excluded data column back to the original dataframe
+miss_flood$cty_miss_noFirm <- miss_flood_x$cty_miss_noFirm
+
+
+```
+
+# Analysis
+
+## Variables
+
+Variables needed for analysis
+
+```{r}
+
+# FIPS as Numeric (for 'did' package)
+flood_df <- flood_df %>% mutate(
+  FIPS = as.numeric(FIPS_5),
+  ln_emp = log1p(emp + 1e-10)
+  )
+
+```
+
+## Filter missing
+
+```{r}
+
+# Function to drop counties with any missing values in a specified variable
+drop_miss_cty <- function(data, variable) {
+  # Identifying counties with any missing values in the specified variable
+  counties_with_missing <- data %>%
+    group_by(FIPS_5) %>%
+    filter(any(is.na(.data[[variable]]))) %>%
+    summarise() %>%
+    pull(FIPS_5)
+
+  # Excluding these counties from the dataset
+  data_filtered <- data %>%
+    filter(!(FIPS_5 %in% counties_with_missing))
+
+  return(data_filtered)
+}
+
+# Example usage: 
+# flood_BDS_filtered <- drop_counties_with_missing(flood_BDS, 'emp')
+
+
+```
+
+```{r}
+
+# Function to verify the results of drop_miss_cty
+verify_filtering <- function(original_data, filtered_data, variable) {
+  # Check for missing values in the specified variable in the filtered dataset
+  missing_values_check <- sum(is.na(filtered_data[[variable]]))
+
+  # Compare the number of unique counties before and after filtering
+  num_counties_before <- length(unique(original_data$FIPS_5))
+  num_counties_after <- length(unique(filtered_data$FIPS_5))
+
+  # Output the results
+  cat("Verification Results:\n")
+  cat("Missing values in '", variable, "' after filtering: ", missing_values_check, "\n", sep = "")
+  cat("Number of counties before filtering: ", num_counties_before, "\n")
+  cat("Number of counties after filtering: ", num_counties_after, "\n")
+  cat("Number of counties removed: ", (num_counties_before - num_counties_after), "\n")
+
+  # List of removed counties
+  if (num_counties_before > num_counties_after) {
+    removed_counties <- setdiff(unique(original_data$FIPS_5), unique(filtered_data$FIPS_5))
+    cat("Counties removed:\n")
+    print(removed_counties)
+  }
+}
+
+# Example usage:
+# verify_filtering(flood_BDS, flood_BDS_filtered, 'emp')
+
+
+```
+
+### emp
+
+```{r eval=FALSE}
+
+emp_flood_df <- drop_miss_cty(flood_df, 'emp')
+
+```
+
+Check the cleaning:
+
+```{r eval=FALSE}
+
+verify_filtering(flood_df, emp_flood_df, 'emp')
+
+```
+
+# TWFE (ChatGPT)
+
+I wanted to capture ChatGPT's attempt at a TWFE, even if I don't use it
+
+```{r eval=FALSE}
+
+library(plm)
+
+# Preparing the data for the regression
+flood_BDS_p <- pdata.frame(flood_BDS_sorted, index = c("FIPS_5", "year"))
+
+# Creating the treatment variable: 1 if post-treatment period and 0 otherwise
+flood_BDS_p$treatment <- as.integer(flood_BDS_p$year >= flood_BDS_p$group & flood_BDS_p$group > 0)
+
+# Running the two-way fixed effects regression
+# Employment as dependent variable, treatment as independent variable, controlling for county and year fixed effects
+model <- plm(emp ~ treatment, data = flood_BDS_p, model = "within", effect = "twoways")
+
+# Displaying the results
+summary(model)
+
+
+```
+
+# Frontiers of DiD
+
+From Causal Mixtape - Frontiers of DiD
+
+```{r eval=FALSE}
+
+library(did)
+
+```
+
+## Emp Model 1
+
+```{r eval=FALSE}
+
+emp_1 <- att_gt(yname="emp",
+                  tname="year",
+                  idname="FIPS",
+                  gname="group",
+                  data=flood_df,
+                  control_group = "notyettreated")
+
+```
+
+```{r eval=FALSE}
+
+  emp_1_es <- aggte(emp_1, type="dynamic")
+  ggdid(emp_1_es, xgap = 5)
+
+```
+
+```{r eval=FALSE}
+
+  emp_1_overall <- aggte(emp_1, type="group")
+  summary(emp_1_overall)
+
+```
+
+## Log Emp Model 1
+
+```{r eval=FALSE}
+
+ln_emp_1 <- att_gt(yname="ln_emp",
+                  tname="year",
+                  idname="FIPS",
+                  gname="group",
+                  data=flood_df,
+                  control_group = "notyettreated")
+
+```
+
+```{r eval=FALSE}
+
+  ln_emp_1_es <- aggte(ln_emp_1, type="dynamic")
+  ggdid(ln_emp_1_es, xgap = 4)
+
+```
+
+```{r eval=FALSE}
+
+p_ln_emp_1_es <- ggdid(ln_emp_1_es, xgap = 5)
+p_ln_emp_1_es
+
+```
+
+```{r eval=FALSE}
+
+  ln_emp_1_overall <- aggte(ln_emp_1, type="group")
+  summary(ln_emp_1_overall)
+
+```
+
+## estabs_exit_rate
+
+```{r eval=FALSE}
+
+est_ex_1 <- att_gt(yname="estabs_exit_rate",
+                  tname="year",
+                  idname="FIPS",
+                  gname="group",
+                  data=flood_df,
+                  control_group = "notyettreated")
+
+```
+
+```{r eval=FALSE}
+
+  est_ex_1_es <- aggte(est_ex_1, type="dynamic")
+  ggdid(est_ex_1_es, xgap = 5)
+
+```
+
+```{r eval=FALSE}
+
+  est_ex_1_overall <- aggte(est_ex_1, type="group")
+  summary(est_ex_1_overall)
+
+```
+
+

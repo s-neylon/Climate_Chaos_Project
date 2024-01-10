@@ -1,0 +1,214 @@
+---
+title: "NWS-BDS Merge"
+output: html_document
+date: "2024-01-02"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(here)
+library(tidyverse)
+library(stringr)
+
+set.seed(7008)
+
+```
+
+# Notes
+
+##(1-4-2024)
+
+This code is to merge the Path 1 wide data (proportions of each industry in each county) to the flood data.
+
+# Code
+
+# Import Test
+
+```{r}
+
+flood_df <- read_csv(here("data/merge/flood-BDS_data.csv"),
+                     col_types = cols(
+  year = col_double(),
+  st = col_character(),
+  cty = col_character(),
+  firms = col_double(),
+  estabs = col_double(),
+  emp = col_double(),
+  denom = col_double(),
+  estabs_entry = col_double(),
+  estabs_entry_rate = col_double(),
+  estabs_exit = col_double(),
+  estabs_exit_rate = col_double(),
+  job_creation = col_double(),
+  job_creation_births = col_double(),
+  job_creation_continuers = col_double(),
+  job_creation_rate_births = col_double(),
+  job_creation_rate = col_double(),
+  job_destruction = col_double(),
+  job_destruction_deaths = col_double(),
+  job_destruction_continuers = col_double(),
+  job_destruction_rate_deaths = col_double(),
+  job_destruction_rate = col_double(),
+  net_job_creation = col_double(),
+  net_job_creation_rate = col_double(),
+  reallocation_rate = col_double(),
+  firmdeath_firms = col_double(),
+  firmdeath_estabs = col_double(),
+  firmdeath_emp = col_double(),
+  FIPS_5 = col_character(),
+  prop_dmg = col_double(),
+  pre_96 = col_double()
+                     ))
+
+```
+
+```{r}
+
+wide_ind <- read_csv(here("data/BDS/wide_bds_sec_df.csv"))
+
+spec(wide_ind)
+
+```
+
+## ChatGPT Code
+
+### Functions
+
+```{r}
+
+# Function to load the bds_df dataset
+load_bds_df <- function(filepath) {
+  read_csv(filepath, col_types = cols(
+  year = col_double(),
+  st = col_character(),
+  cty = col_character(),
+  firms = col_double(),
+  estabs = col_double(),
+  emp = col_double(),
+  denom = col_double(),
+  estabs_entry = col_double(),
+  estabs_entry_rate = col_double(),
+  estabs_exit = col_double(),
+  estabs_exit_rate = col_double(),
+  job_creation = col_double(),
+  job_creation_births = col_double(),
+  job_creation_continuers = col_double(),
+  job_creation_rate_births = col_double(),
+  job_creation_rate = col_double(),
+  job_destruction = col_double(),
+  job_destruction_deaths = col_double(),
+  job_destruction_continuers = col_double(),
+  job_destruction_rate_deaths = col_double(),
+  job_destruction_rate = col_double(),
+  net_job_creation = col_double(),
+  net_job_creation_rate = col_double(),
+  reallocation_rate = col_double(),
+  firmdeath_firms = col_double(),
+  firmdeath_estabs = col_double(),
+  firmdeath_emp = col_double(),
+  FIPS_5 = col_character()
+  )) %>%
+    filter(year >= 1986)
+}
+
+# Function to load the flood_dmg dataset
+load_flood_dmg <- function(filepath) {
+  read_csv(filepath, col_types = cols(
+    FIPS_5 = col_character(),
+    prop_dmg = col_double(),
+    year = col_double()
+  ))
+}
+
+# Function to join datasets and filter based on State FIPS codes
+join_and_filter <- function(bds_df, flood_dmg) {
+  bds_df %>%
+    left_join(flood_dmg, by = c("FIPS_5", "year")) %>%
+    filter(!(st %in% c("02", "15")) & st < 56) %>%
+    mutate(pre_96 = if_else(year < 1996, 1, 0),
+           prop_dmg = if_else(is.na(prop_dmg), 0, prop_dmg),
+           dmg_perEMP = prop_dmg / emp) %>%
+    filter(FIPS_5 != "51515")
+}
+
+```
+
+### Run
+
+```{r}
+
+# Load and process the datasets
+bds_df_path <- here("data/BDS/bds_df.csv")
+flood_dmg_path <- here("data/storm_events/test/flood_dmg_96-23.csv")
+
+bds_df <- load_bds_df(bds_df_path)
+flood_dmg <- load_flood_dmg(flood_dmg_path)
+
+# Join the datasets and filter
+flood_bds_df <- join_and_filter(bds_df, flood_dmg)
+
+```
+
+### Export
+
+```{r eval=FALSE}
+
+write_csv(flood_bds_df, here("data/merge/flood-BDS_data.csv"))
+
+```
+
+### Export Short
+
+```{r eval=FALSE}
+
+flood_bds_df %>% filter(year >= 1996) %>%  write_csv(here("data/merge/short_flood-BDS_data.csv"))
+
+```
+
+### Export Short - Just Damage
+
+```{r eval=FALSE}
+
+cut_flood_bds <- flood_bds_df %>% filter(year >= 1996) %>% select(year, emp, FIPS_5, prop_dmg)
+  
+write_csv(cut_flood_bds, here("data/merge/cut_flood-BDS_data.csv"))
+
+```
+
+# Merge with Geo Data
+
+```{r}
+
+fips_df <- read_csv(here("data/Labels/FIPS_all_counties.csv"))
+
+```
+
+
+```{r}
+
+geo_flood_df <- left_join(flood_bds_df, fips_df, join_by(FIPS_5 == FIPS_text))
+
+```
+
+## Tableau Geo Version
+
+```{r eval=FALSE}
+
+write_csv(geo_flood_df, here("data/merge/geo_flood-BDS_data.csv"))
+
+```
+
+# Data Exploration
+
+```{r eval=FALSE}
+
+flood_bds_df %>% group_by(st) %>% count(st)
+
+```
+
+```{r eval=FALSE}
+
+flood_dmg %>% mutate(state = str_sub(FIPS_5, 1,2)) %>% group_by(state) %>% count(state)
+
+```

@@ -1,0 +1,147 @@
+---
+title: "BDS Data Import & Clean"
+output: html_document
+date: "2023-09-22"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(here)
+library(tidyverse)
+
+
+```
+
+# Notes
+
+## (1-1-24)
+
+I set "(D)" to 'na' in the data, as this is missing in the numeric columns.
+
+# Import
+
+```{r eval=FALSE}
+
+View(problems(bds_df))
+
+```
+
+```{r}
+
+# NOTE: I am keeping this, with all the numeric columns read in as col_character(), because if I have to re-do it, it was very tedious to change all these to character!
+
+bds_df <- read_csv(here("data/BDS/bds2020_st_cty.csv"),
+                   na = "(D)",
+                   col_types = cols(
+  year = col_double(),
+  st = col_character(),
+  cty = col_character(),
+  firms = col_double(),
+  estabs = col_double(),
+  emp = col_double(),
+  denom = col_double(),
+  estabs_entry = col_double(),
+  estabs_entry_rate = col_double(),
+  estabs_exit = col_double(),
+  estabs_exit_rate = col_double(),
+  job_creation = col_double(),
+  job_creation_births = col_double(),
+  job_creation_continuers = col_double(),
+  job_creation_rate_births = col_double(),
+  job_creation_rate = col_double(),
+  job_destruction = col_double(),
+  job_destruction_deaths = col_double(),
+  job_destruction_continuers = col_double(),
+  job_destruction_rate_deaths = col_double(),
+  job_destruction_rate = col_double(),
+  net_job_creation = col_double(),
+  net_job_creation_rate = col_double(),
+  reallocation_rate = col_double(),
+  firmdeath_firms = col_double(),
+  firmdeath_estabs = col_double(),
+  firmdeath_emp = col_double()
+)
+                   )
+
+```
+
+# Clean
+
+```{r}
+
+bds_df <- bds_df %>% 
+  mutate(
+    FIPS_5 = str_c(st, cty)
+  )
+
+```
+
+# Export
+
+```{r eval=FALSE}
+
+write_csv(bds_df, here("data/BDS/bds_df.csv"))
+
+```
+
+# Data Exploration
+
+```{r eval=FALSE}
+
+summary(bds_df)
+
+```
+
+```{r eval=FALSE}
+
+glimpse(bds_df)
+
+```
+
+```{r eval=FALSE}
+
+county_count <- unique(bds_df$FIPS_5)
+
+```
+
+# Old Code
+
+```{r eval=FALSE}
+
+# NOTE: I am keeping this, with all the numeric columns read in as col_character(), because if I have to re-do it, it was very tedious to change all these to character!
+
+bds_df <- read_csv(here("data/BDS/bds2020_st_cty.csv"),
+                   na = "(D)",
+                   col_types = cols(
+  year = col_double(),
+  st = col_character(),
+  cty = col_character(),
+  firms = col_character(),
+  estabs = col_character(),
+  emp = col_character(),
+  denom = col_character(),
+  estabs_entry = col_character(),
+  estabs_entry_rate = col_character(),
+  estabs_exit = col_character(),
+  estabs_exit_rate = col_character(),
+  job_creation = col_character(),
+  job_creation_births = col_character(),
+  job_creation_continuers = col_character(),
+  job_creation_rate_births = col_character(),
+  job_creation_rate = col_character(),
+  job_destruction = col_character(),
+  job_destruction_deaths = col_character(),
+  job_destruction_continuers = col_character(),
+  job_destruction_rate_deaths = col_character(),
+  job_destruction_rate = col_character(),
+  net_job_creation = col_character(),
+  net_job_creation_rate = col_character(),
+  reallocation_rate = col_character(),
+  firmdeath_firms = col_character(),
+  firmdeath_estabs = col_character(),
+  firmdeath_emp = col_character()
+)
+                   )
+
+```

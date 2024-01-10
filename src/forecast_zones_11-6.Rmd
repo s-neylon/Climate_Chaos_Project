@@ -1,0 +1,197 @@
+---
+title: "Forecast Zones"
+author: "Sam Neylon"
+date: '2023-11-05'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(here)
+library(tidyverse)
+library(stringr)
+
+```
+
+# Notes
+##(11-5-23)
+
+Okay, so I figured out one way to do this. I do a join which is way too big, with every combination (hopefully not permutation...) of Forecast Zone and county.
+  * Then I group by county, and do a 0 or 1 depending on if a hurricane hit.
+
+Episode ID: One interesting wrinkle, because hurricanes have an episode ID, I can group by the HURRICANE itself... could be an interesting way to do the treatment effects...
+  * Also, in case multiple hurricanes hit in a year, I can see this.
+
+!!!NOTE!!! -- You should go through the code below, and clean up any joins that do weird "FIPS.y" type stuff - you want to make sure your joins are predictable (and there isn't duplication of column names!)
+
+# Import Zones
+
+Zones are in a .dbx file, which is apparently an Outlook database? But when I look at the file, they are delimited with a vertical bar "|" - so I can use readr to read it in (maybe).
+
+File downloaded from here: https://www.weather.gov/gis/ZoneCounty
+
+```{r}
+
+zone_county <- read_delim(here("data/Labels/forecastZones_counties.dbx"), delim = "|", col_names = c(
+  "STATE",
+  "ZONE",
+  "CWA",
+  "NAME",
+  "STATE_ZONE",
+  "COUNTY",
+  "FIPS",
+  "TIME_ZONE",
+  "FE_AREA",
+  "LAT",
+  "LON"
+))
+
+
+
+```
+
+## Combo ID
+
+Combine FIPS and Zone numbers
+
+```{r}
+
+zone_county <- zone_county %>% mutate(
+  fips_zone = str_c(FIPS, ZONE)
+)
+
+```
+
+
+# NWS Events Data
+
+```{r}
+
+nws_detail_22 <- read_csv(here("data/storm_events/test/StormEvents_details-ftp_v1.0_d2022_c20231017.csv"))
+
+```
+
+## State FIPS
+
+```{r}
+
+state_fips <- read_csv(here("data/Labels/state_fips.csv")) %>% 
+  mutate(fips_num = as.numeric(FIPS))
+
+```
+
+```{r}
+
+nws_detail_22 <- left_join(nws_detail_22, state_fips, join_by(STATE_FIPS == fips_num))
+
+```
+
+## Full FIPS
+
+```{r}
+
+nws_detail_22 <- nws_detail_22 %>% mutate(
+  full_FIPS = case_when(
+    str_length(CZ_FIPS) == 3  ~ as.character(CZ_FIPS),
+    str_length(CZ_FIPS) == 2  ~ str_c("0", as.character(CZ_FIPS)),
+    str_length(CZ_FIPS) == 1  ~ str_c("00", as.character(CZ_FIPS))
+  ),
+  STATE_ZONE = str_c(Postal, full_FIPS)
+)
+
+```
+
+
+```{r}
+
+zoneJoin <- inner_join(zone_county, filter(nws_detail_22, CZ_TYPE == "Z"), join_by(STATE_ZONE == STATE_ZONE))
+
+```
+
+## Data Check
+
+```{r eval=FALSE}
+
+tbl_zoneJoin <- zoneJoin %>% group_by(STATE_ZONE) %>% count() %>% mutate(STATE = str_sub(STATE_ZONE, 1, 2))
+
+```
+
+```{r eval=FALSE}
+
+tbl2_zoneJoin <- zoneJoin %>% group_by(fips_zone) %>% count()
+
+```
+
+```{r eval=FALSE}
+
+ev_tbl <- zoneJoin %>% filter(CZ_TYPE == "Z") %>% count(EVENT_ID)
+
+```
+
+
+# Hurricane by County
+
+```{r}
+
+county_hurr <- zoneJoin %>% mutate(
+  hurr = ifelse(EVENT_TYPE == "Hurricane", 1, 0)
+) %>% 
+  group_by(FIPS.y) %>% 
+  summarise(
+    hurr_sum = sum(hurr)
+  ) %>% 
+  mutate(hurr = ifelse(hurr_sum > 0, 1, 0))
+
+```
+
+
+## Data Check
+
+```{r eval=FALSE}
+
+hurr2_nws <- zoneJoin %>% filter(EVENT_TYPE == "Hurricane")
+
+```
+
+
+
+# Tableau Version
+
+```{r eval=FALSE}
+
+write_csv(zoneJoin, here("data/storm_events/test/zoneJoin_2022.csv"))
+
+```
+
+```{r eval=FALSE}
+
+write_csv(county_hurr, here("data/storm_events/test/county_hurr_2022.csv"))
+
+```
+
+
+# Zone Data Check
+
+Make list of zones that lie in more than one county.
+
+```{r eval=FALSE}
+
+tbl_zone <- zone_county %>% group_by(STATE_ZONE) %>% count() %>% mutate(STATE = str_sub(STATE_ZONE, 1, 2))
+
+```
+
+```{r eval=FALSE}
+
+write_csv(tbl_zone, here("data/Labels/working_data/forecast_zones_count.csv"))
+
+```
+
+```{r eval=FALSE}
+
+st_tbl_zone <- tbl_zone %>% group_by(STATE) %>% 
+  summarise(single = sum(ifelse(n == 1, 1, 0)),
+            multi = sum(ifelse(n > 1, 1, 0)))
+
+```
+

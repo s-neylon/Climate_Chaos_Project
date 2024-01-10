@@ -1,0 +1,409 @@
+---
+title: "NWS Flood Data Loop Build"
+output: html_document
+date: "2023-12-28"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(here)
+library(tidyverse)
+library(stringr)
+library(fs)
+
+```
+
+# Notes
+##(12-28-2023)
+
+This is a building and testing document. I am working on a loop which will clean and load flood data from the NWS.
+
+NOTE: Flooding definitions change a lot over the years! BUT, I am in coding mode, so I should finish this, only with a limited number of years.
+  NEW PLAN: Create a version of the function which just gets a count of all the different events by year! This will allow you to code things up, and avoid having to find older versions of the documentation.
+  * I did it! Now on to the final form:
+
+TO DO:
+
+1. I need to create code to get a list of the files I want to import
+  - Only certain years
+  - Only "detail" files
+2. I need to take these files one at a time, clean them
+3. Merge them
+  - This is sort of easy - there is a map function.
+  
+It works!!!
+
+## Data Cleaning Notes
+
+53059 - Skamania County, WA - seems to be missing
+
+Also, there are parsing errors from read_csv, which you should sort through.
+
+Tableau Note: A LOT of the damage is in the "Null" category! This could be an issue with the geo join (which is fine), or the underlying data (which is not)
+
+## Dmg per Capita
+
+Would be nice to get population, so you can get damage per capita? What is the easiest way?
+
+##(12-31-23)
+
+I did a lot of work figuring out some of the issues with this!
+
+The code chunk function below now has no rows with missing County Titles, so you should work on getting this code copied over to your full loop.
+
+The big changes I made:
+1. Dropped US territories (FIPS starting with "9")
+2. Dropped Alaska, because county definitions have changed: 
+(From ChatGPT):
+"The FIPS (Federal Information Processing Standards) code 02226 corresponds to the now-defunct Valdez-Cordova Census Area in the U.S. state of Alaska. However, it's important to note that as of January 1, 2019, the Valdez-Cordova Census Area was officially dissolved and split into two new census areas: Chugach Census Area and Copper River Census Area.
+
+The FIPS codes for these new areas are:
+
+    Chugach Census Area: 02063
+    Copper River Census Area: 02066
+
+This change is part of a regular process of updating and maintaining geographic and administrative divisions in the United States."
+
+# Function Work
+
+## Get File List
+
+For certain years - (you didn't do this with the QCEW data)
+For 'details' files
+
+```{r}
+
+# Define the function
+get_filepaths <- function(base_path, start_year, end_year) {
+  
+  # Define the path to your files
+  nws_path <- here(base_path)
+
+  # Define the range of years
+  nws_years <- start_year:end_year
+
+  # Create a regex pattern to match filenames with the specified years
+  year_pattern <- paste(nws_years, collapse = "|")
+  filename_pattern <- str_glue("StormEvents_details-ftp_v1\\.0_d({year_pattern}).*\\.csv$")
+  
+  # List and filter files based on the pattern
+  nws_files <- dir_ls(path = nws_path, regexp = filename_pattern)
+
+  # Modify filenames
+  modified_filenames <- lapply(nws_files, function(filename) {
+    # Extract the last part of the filename (after the last '/')
+    last_part <- basename(filename)
+
+    # Duplicate and append this part to the original filename
+    str_c(filename, "/", last_part)
+  })
+
+  return(modified_filenames)
+}
+
+```
+
+```{r}
+
+nws_files <- get_filepaths('data/storm_events/11-5', start_year = 2019, end_year = 2023)
+
+```
+
+
+
+## Clean and Count Function
+
+```{r eval=FALSE}
+
+event_count <- function(file_name){
+  read.csv(file_name) %>% 
+    filter(CZ_TYPE == "C") %>% 
+    group_by(EVENT_TYPE) %>%
+    summarise(
+      count = n(),
+      year = min(YEAR)
+    )
+}
+
+```
+
+### Testing
+
+```{r eval=FALSE}
+
+test_df <-  read.csv(here("data/storm_events/11-5/StormEvents_details-ftp_v1.0_d2020_c20230927.csv/StormEvents_details-ftp_v1.0_d2020_c20230927.csv")) %>% 
+    filter(CZ_TYPE == "C") %>% 
+    group_by(EVENT_TYPE) %>%
+    summarise(
+      count = n(),
+      year = min(YEAR)
+    )
+
+```
+
+```{r eval=FALSE}
+
+test_df <-  read_csv(here("data/storm_events/11-5/StormEvents_details-ftp_v1.0_d2020_c20230927.csv/StormEvents_details-ftp_v1.0_d2020_c20230927.csv"))
+
+```
+
+```{r eval=FALSE}
+
+spec(test_df)
+
+```
+
+```{r eval=FALSE}
+
+test2_df <-  read_csv(here("data/storm_events/11-5/StormEvents_details-ftp_v1.0_d2020_c20230927.csv/StormEvents_details-ftp_v1.0_d2020_c20230927.csv"),
+                      col_types = cols(
+  BEGIN_YEARMONTH = col_double(),
+  BEGIN_DAY = col_double(),
+  BEGIN_TIME = col_double(),
+  END_YEARMONTH = col_double(),
+  END_DAY = col_double(),
+  END_TIME = col_double(),
+  EPISODE_ID = col_character(),
+  EVENT_ID = col_character(),
+  STATE = col_character(),
+  STATE_FIPS = col_character(),
+  YEAR = col_double(),
+  MONTH_NAME = col_character(),
+  EVENT_TYPE = col_character(),
+  CZ_TYPE = col_character(),
+  CZ_FIPS = col_character(),
+  CZ_NAME = col_character(),
+  WFO = col_character(),
+  BEGIN_DATE_TIME = col_character(),
+  CZ_TIMEZONE = col_character(),
+  END_DATE_TIME = col_character(),
+  INJURIES_DIRECT = col_double(),
+  INJURIES_INDIRECT = col_double(),
+  DEATHS_DIRECT = col_double(),
+  DEATHS_INDIRECT = col_double(),
+  DAMAGE_PROPERTY = col_character(),
+  DAMAGE_CROPS = col_character(),
+  SOURCE = col_character(),
+  MAGNITUDE = col_double(),
+  MAGNITUDE_TYPE = col_character(),
+  FLOOD_CAUSE = col_character(),
+  CATEGORY = col_double(),
+  TOR_F_SCALE = col_character(),
+  TOR_LENGTH = col_double(),
+  TOR_WIDTH = col_double(),
+  TOR_OTHER_WFO = col_character(),
+  TOR_OTHER_CZ_STATE = col_character(),
+  TOR_OTHER_CZ_FIPS = col_character(),
+  TOR_OTHER_CZ_NAME = col_character(),
+  BEGIN_RANGE = col_double(),
+  BEGIN_AZIMUTH = col_character(),
+  BEGIN_LOCATION = col_character(),
+  END_RANGE = col_double(),
+  END_AZIMUTH = col_character(),
+  END_LOCATION = col_character(),
+  BEGIN_LAT = col_double(),
+  BEGIN_LON = col_double(),
+  END_LAT = col_double(),
+  END_LON = col_double(),
+  EPISODE_NARRATIVE = col_character(),
+  EVENT_NARRATIVE = col_character(),
+  DATA_SOURCE = col_character()
+)
+                      )
+
+```
+
+# Flood Clean Function
+
+## State FIPS
+
+```{r}
+
+state_fips <- read_csv(here("data/Labels/state_fips.csv")) %>% 
+  mutate(fips_num = as.numeric(FIPS))
+
+```
+
+## Function
+
+```{r eval=FALSE}
+
+flood_clean <- function(file_name){
+  flood_df <- read.csv(file_name) %>% 
+    filter(CZ_TYPE == "C")
+
+## Join with State Data
+
+nws_detail <- left_join(nws_detail, state_fips, join_by(STATE_FIPS == fips_num))
+
+## Just Counties
+
+nws_counties <- nws_detail %>% filter(CZ_TYPE == "C")
+
+## Full FIPS
+
+nws_counties <- nws_counties %>% mutate(
+  full_FIPS = case_when(
+    str_length(CZ_FIPS) == 3  ~ as.character(CZ_FIPS),
+    str_length(CZ_FIPS) == 2  ~ str_c("0", as.character(CZ_FIPS)),
+    str_length(CZ_FIPS) == 1  ~ str_c("00", as.character(CZ_FIPS))
+  ),
+  FIPS_5 = str_c(FIPS, full_FIPS)
+)
+
+## Just Floods
+
+nws_flood <- nws_counties %>% filter(EVENT_TYPE == "Flood" | EVENT_TYPE == "Flash Flood")
+
+## Convert Damage to Number
+
+nws_flood <- nws_flood %>% 
+  mutate(
+    PROP_DMG = case_when(
+      is.na(DAMAGE_PROPERTY) ~ NA_real_,
+      str_detect(DAMAGE_PROPERTY, "K") ~ parse_number(DAMAGE_PROPERTY) * 1000,
+      str_detect(DAMAGE_PROPERTY, "M") ~ parse_number(DAMAGE_PROPERTY) * 1000000,
+      TRUE ~ NA_real_
+    )
+  ) %>% 
+  relocate(PROP_DMG, .before = DAMAGE_PROPERTY)
+
+}
+
+```
+
+```{r}
+
+# I used ChatGPT to clean up this code and pipe everything!
+
+# Cleans and processes flood data from a given CSV file.
+# 
+# Args:
+#   file_name: The path to the CSV file containing flood data.
+#   state_fips: Data frame containing state FIPS codes.
+#
+# Returns:
+#   A data frame of summarized property damage per county.
+
+flood_clean <- function(file_name) {
+  read_csv(file_name) %>%
+    filter(CZ_TYPE == "C") %>%
+    left_join(state_fips, by = c("STATE_FIPS" = "fips_num")) %>%
+    mutate(
+      full_FIPS = case_when(
+        str_length(CZ_FIPS) == 3 ~ as.character(CZ_FIPS),
+        str_length(CZ_FIPS) == 2 ~ str_c("0", as.character(CZ_FIPS)),
+        str_length(CZ_FIPS) == 1 ~ str_c("00", as.character(CZ_FIPS))
+      ),
+      STATE_FIPS_CODE = case_when(
+        str_length(STATE_FIPS) == 2 ~ as.character(STATE_FIPS),
+        str_length(STATE_FIPS) == 1 ~ str_c("0", as.character(STATE_FIPS))
+      ),
+      FIPS_5 = str_c(STATE_FIPS_CODE, full_FIPS)
+    ) %>%
+    filter(EVENT_TYPE %in% c("Flood", "Flash Flood")) %>%
+    # Dropping data from Alaska (because of County-definition changes) and US Territories
+    filter(!str_starts(FIPS_5, "9") & !str_starts(FIPS_5, "02")) %>% 
+    mutate(
+      PROP_DMG = case_when(
+        is.na(DAMAGE_PROPERTY) ~ NA_real_,
+        str_detect(DAMAGE_PROPERTY, "K") ~ parse_number(DAMAGE_PROPERTY) * 1000,
+        str_detect(DAMAGE_PROPERTY, "M") ~ parse_number(DAMAGE_PROPERTY) * 1000000,
+        TRUE ~ NA_real_
+      )
+    ) %>%
+    relocate(PROP_DMG, .before = DAMAGE_PROPERTY) %>%
+    
+    # Group by FIPS_5 code and summarise total property damage
+    group_by(FIPS_5) %>%
+    summarise(
+      prop_dmg = sum(PROP_DMG, na.rm = TRUE),
+      year = min(YEAR))
+}
+
+# Example usage:
+# result <- flood_clean("path/to/file.csv", state_fips_data_frame)
+
+
+```
+
+### Function Testing
+
+I am getting a lot of "null" values for location, in Tableau. I want to see if the same thing is happening here.
+
+
+## Map Flood
+
+```{r}
+
+flood_df <- map_dfr(nws_files, flood_clean)
+
+```
+
+
+
+# Tableau Version
+
+```{r eval=FALSE}
+
+write_csv(flood_df, here("data/storm_events/test/cleaning_flood_dmg.csv"))
+
+```
+
+# Geo Data 
+
+Add County names to data, so I can get them in Tableau
+
+```{r}
+
+fips_df <- read_csv(here("data/Labels/FIPS_all_counties.csv"))
+
+```
+
+
+```{r}
+
+geo_flood_df <- left_join(flood_df, fips_df, join_by(FIPS_5 == FIPS_text))
+
+```
+
+## Tableau Geo Version
+
+```{r eval=FALSE}
+
+write_csv(geo_flood_df, here("data/storm_events/test/cleaning_geo_flood_dmg.csv"))
+
+```
+
+# Cleaning
+
+## Null locations?
+
+Are they coming from the main data, or the county names data I join for the geo?
+
+```{r eval=FALSE}
+
+View(geo_flood_df %>% filter(is.na(County_Title)))
+
+```
+
+```{r eval=FALSE}
+
+geo_flood_df %>% filter(is.na(County_Title)) %>% mutate(st_code = str_sub(FIPS_5, 1, 2)) %>% group_by(st_code) %>% count()
+
+```
+
+```{r eval=FALSE}
+
+geo_flood_df %>% filter(is.na(FIPS_5))
+
+```
+
+```{r eval=FALSE}
+
+
+
+```
+
+

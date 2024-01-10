@@ -1,0 +1,99 @@
+---
+title: "Flood Data Clean"
+output: html_document
+date: "2023-12-31"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(here)
+library(tidyverse)
+library(stringr)
+library(fs)
+
+```
+
+# Notes
+
+##(12-31-23)
+
+While I already figured out how to build a loop which would import the flood data, I wanted to create this separate worksheet, to get into some of the nitty-gritty of cleaning.
+
+In particular, I am trying out the ChatGPT Data Analysis tools!
+
+
+
+# NWS Events Data
+
+```{r}
+
+nws_detail_22 <- read_csv(here("data/storm_events/test/StormEvents_details-ftp_v1.0_d2022_c20231017.csv"))
+
+```
+```{r eval=FALSE}
+
+problems(nws_detail_22)
+
+```
+
+# Data Exploration
+
+```{r eval=FALSE}
+
+View(nws_detail_22 %>% filter(is.na(CZ_FIPS)))
+
+```
+
+## Mutate
+
+```{r eval=FALSE}
+
+fips_mutate <- nws_detail_22 %>% 
+      filter(CZ_TYPE == "C") %>%
+    mutate(
+      full_FIPS = case_when(
+        str_length(CZ_FIPS) == 3 ~ as.character(CZ_FIPS),
+        str_length(CZ_FIPS) == 2 ~ str_c("0", as.character(CZ_FIPS)),
+        str_length(CZ_FIPS) == 1 ~ str_c("00", as.character(CZ_FIPS))
+      ),
+      STATE_FIPS_CODE = case_when(
+        str_length(STATE_FIPS) == 2 ~ as.character(STATE_FIPS),
+        str_length(STATE_FIPS) == 1 ~ str_c("0", as.character(STATE_FIPS))
+      ),
+      FIPS_5 = str_c(STATE_FIPS_CODE, full_FIPS)
+    )
+
+```
+
+```{r eval=FALSE}
+
+View(fips_mutate %>% filter(is.na(full_FIPS)))
+
+```
+
+```{r eval=FALSE}
+
+fips_mutate %>% group_by(STATE) %>% count()
+
+```
+
+```{r eval=FALSE}
+
+# Chat GPT export
+
+write_csv(fips_mutate, here("data/storm_events/test/cleaning_flood_details.csv"))
+
+```
+
+```{r eval=FALSE}
+
+View(fips_mutate %>% filter(str_starts(FIPS_5, "9")))
+
+```
+
+```{r eval=FALSE}
+
+fips_mutate %>% filter(str_starts(FIPS_5, "9")) %>% group_by(STATE) %>% count()
+
+```

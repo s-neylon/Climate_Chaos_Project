@@ -1,0 +1,520 @@
+---
+title: "Deryugina Replication Import and Gsynth Test"
+author: "Sam Neylon"
+date: '2023-06-24'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(here)
+library(tidyverse)
+library(gsynth)
+library(panelView)
+library(lubridate)
+
+```
+
+# Notes
+
+##(06-23-2023)
+
+Decisions to be made:
+
+- What to do with counties "treated" by hurricanes in the beginning of the period?
+- Get rid of missing data.
+- Filter for Southeast US??
+
+##(07-20-2023)
+
+- Limiting to 2002-2012
+  - 2014 is missing some rows, but not in the sample_hurr_state variable.
+  - NOTE!! Outcome (emp ratio) is almost all missing for 2013-2014
+- Outcome
+  - emp_rate_tot_adult = CBP employment divided by population aged 15+
+  - This is what Deryugina used in paper (pg 8)
+
+Gsynth
+  I may want to switch to fect (more recent), but I will stick with gsynth for now, since the documentation is better (for DiD).
+  
+##(07-22-2023)
+
+Pretreatment Periods
+
+I need a lot of pretreatment periods for the method to work! Following Deryugina, I will add 10 years before I actually start (1992-2002). I will also add a covariate for counties which had a hurricane during this period.
+  - Maybe kooky, but I guess I could just use the 'hurricane' indicator as a covariate for the pre-treatment periods??? So this would get used as a covariate for the imputation??? Maybe a 'years since hurricane' variable???
+
+
+# Import
+
+```{r eval=TRUE}
+
+df <- read_csv(here("data/Deryugina_replication/data/Final_dataset.csv"),
+               col_types = cols(
+  county_fips = col_character(),
+  year = col_double(),
+  longitude = col_double(),
+  latitude = col_double(),
+  state_fips = col_character(),
+  cbsa = col_character(),
+  cz = col_character(),
+  coastal = col_double(),
+  consistent_sample = col_double(),
+  sample_hurr_state = col_double(),
+  sample_hurr_valley = col_double(),
+  wind_speed = col_double(),
+  hurricane = col_double(),
+  central_wind_speed = col_double(),
+  central_hurr = col_double(),
+  cat1_hurr = col_double(),
+  cat2_hurr = col_double(),
+  dollars_uniform = col_double(),
+  dollars_uniform_hurr = col_double(),
+  dollars_uniform_ws = col_double(),
+  dollars_uniform_ws_hurr = col_double(),
+  dollars_uniform_pc = col_double(),
+  dollars_pc_hurr = col_double(),
+  dollars_pc_ws = col_double(),
+  dollars_pc_ws_hurr = col_double(),
+  log_net_earnings_pc = col_double(),
+  log_educ_train_assistance_pc = col_double(),
+  log_medicare_pc = col_double(),
+  log_public_med_benefits_pc = col_double(),
+  log_ret_dis_ins_pc = col_double(),
+  log_ssi_benefits_pc = col_double(),
+  log_curr_trans_ind_gov_pc = col_double(),
+  log_curr_trans_ind_bus_pc = col_double(),
+  log_inc_maint_pc = col_double(),
+  log_family_assistance_pc = col_double(),
+  log_food_stamps_pc = col_double(),
+  log_avg_earnings_job = col_double(),
+  log_avg_wage_sal_disb = col_double(),
+  log_wage_pc = col_double(),
+  log_unemp_pc = col_double(),
+  log_wage_pc1969 = col_double(),
+  log_pop1969 = col_double(),
+  population = col_double(),
+  pop_adult = col_double(),
+  pop_working_age = col_double(),
+  land_area1970 = col_double(),
+  frac_young = col_double(),
+  frac_old = col_double(),
+  frac_black = col_double(),
+  amt_flood_payments = col_double(),
+  unemp_rate_state = col_double(),
+  state_net_earn_pc = col_double(),
+  emp_rate_tot_all = col_double(),
+  emp_rate_tot_adult = col_double(),
+  emp_rate_tot_wa = col_double(),
+  emp_rate_REIS_all = col_double(),
+  emp_rate_REIS_adult = col_double(),
+  emp_rate_REIS_wa = col_double(),
+  emp_rate1969 = col_double(),
+  frac_young1969 = col_double(),
+  frac_old1969 = col_double(),
+  frac_black1969 = col_double()
+               ))
+
+```
+
+# Data
+
+## Filter
+
+- (NOT) Changing to 2001, since I need pretreatment periods for treated counties, so I need to drop counties which had a hurricane the year I begin, 
+- Changing to 1992, to get 10 years of pretreatment data.
+
+```{r eval=TRUE}
+
+h_df <- df %>% filter(year >= 1992 & year < 2013)
+
+```
+
+consistent_sample = 1 if observation is part of a sample where all the key variables are non-missing
+
+sample_hurr_state = 1 if county is in one of 21 Eastern/Southeastern states
+
+```{r eval=TRUE}
+
+#h_df <- h_df %>% filter(consistent_sample == 1 & sample_hurr_state == 1)
+h_df <- h_df %>% filter(sample_hurr_state == 1)
+
+```
+
+# Time Series
+
+## Date Format
+
+```{r eval=TRUE}
+
+h_df <- h_df %>% mutate(date = ymd(year, truncated = 2L)) %>% 
+  relocate(date, .after = year) 
+
+```
+
+## Modify by Date
+
+```{r eval=TRUE}
+
+h_df <- h_df %>% group_by(county_fips) %>% 
+  mutate(hur_date1 = if_else(hurricane == 1, date, today())) %>% 
+  mutate(hur_date2 = min(hur_date1)) %>% 
+  relocate(hur_date2, .after = hurricane) %>% 
+  # h_persist is only for treatment period (2002-2012)
+  mutate(h_persistALL = ifelse(date >= hur_date2, 1, 0),
+         h_persist = ifelse(year >= 2002, h_persistALL, 0)) %>% 
+  relocate(h_persist, .after = hurricane) %>% 
+  ungroup()
+
+```
+
+# Filter 2
+
+## Missing Outcome
+
+```{r eval=T}
+
+h_df <- h_df %>% group_by(county_fips) %>% mutate(NA_outcome = sum(is.na(emp_rate_tot_adult))) %>% filter(NA_outcome == 0) %>% ungroup()
+
+```
+
+
+# Gsynth Data Exploration
+
+## Panelview
+
+```{r eval=T}
+
+panelview(emp_rate_tot_adult ~ h_persist, data = h_df, index = c("county_fips", "date"), pre.post = TRUE, by.timing = TRUE)
+
+```
+
+Graph of results - I have to figure out how to filter the dates and counties somehow, it can't show them all this way.
+
+```{r eval=FALSE}
+
+panelview(emp_rate_tot_adult ~ h_persist, data = h_df, 
+          index = c("county_fips", "date"), type = "outcome", 
+          main = "Emp Rate", 
+          by.group = TRUE)
+
+```
+
+
+# EDA
+
+```{r eval=TRUE}
+
+h_df %>% count(year)
+
+```
+
+### Hurricane Count
+
+```{r eval=TRUE}
+
+h_df %>% group_by(county_fips) %>% mutate(h_count = sum(hurricane)) %>% ungroup() %>% count(h_count)
+
+```
+
+## NA on outcome
+
+  - emp_rate_tot_adult = CBP employment divided by population aged 15+
+  - This is what Deryugina used in paper (pg 8)
+
+```{r eval=T}
+
+h_df %>% group_by(county_fips) %>% mutate(NA_outcome = sum(is.na(emp_rate_tot_adult))) %>% ungroup() %>% count(NA_outcome)
+
+```
+
+```{r eval=TRUE}
+
+h_df %>% group_by(year) %>% summarise(NA_outcome = sum(is.na(emp_rate_tot_adult)))
+
+```
+
+### Hurricane in 1 year
+
+```{r eval=FALSE}
+
+h_df %>% filter(year == 2001) %>% summarise(
+  total = n(),
+  hurricanes = sum(hurricane)
+)
+
+```
+
+# Covariates
+
+##(07-22-2023)
+
+Slightly modifying Deryugina's (because I don't care about transfers), I use:
+
+coastal   =1 if county is coastal, 0 otherwise
+  NOT Coastal - unit-invariant, so like in fixed effects, this is already controlled for.
+pop_pm    Density: gen pop_pm=population/land_area1970
+log_pop   Log of total pop: gen log_pop = log(population)
+log_wage_pc   log(wage/salary payments per capita)
+frac_young    Fraction of population that is under 20 years old
+frac_old    Fraction of population that is 65 and older
+frac_black    Fraction of population that is black
+
+## New Var
+
+```{r eval=TRUE}
+
+h_df <- h_df %>% mutate(
+ pop_pm = population / land_area1970,
+ log_pop = log(population)
+)
+
+```
+
+
+## Missing
+
+### Specific Var
+
+coastal + pop_pm + log_pop + log_wage_pc + frac_young + frac_old + frac_black
+
+```{r eval=FALSE}
+
+# Testing Code
+
+h_df %>% group_by(county_fips) %>% mutate(NA_outcome = sum(is.na(pop_pm))) %>% ungroup() %>% count(NA_outcome)
+
+h_df %>% group_by(county_fips) %>% mutate(NA_outcome = sum(is.na(log_pop))) %>% ungroup() %>% count(NA_outcome)
+
+h_df %>% group_by(county_fips) %>% mutate(NA_outcome = sum(is.na(log_wage_pc))) %>% ungroup() %>% count(NA_outcome)
+
+h_df %>% group_by(county_fips) %>% mutate(NA_outcome = sum(is.na(frac_young))) %>% ungroup() %>% count(NA_outcome)
+
+h_df %>% group_by(county_fips) %>% mutate(NA_outcome = sum(is.na(frac_old))) %>% ungroup() %>% count(NA_outcome)
+
+h_df %>% group_by(county_fips) %>% mutate(NA_outcome = sum(is.na(frac_black))) %>% ungroup() %>% count(NA_outcome)
+
+```
+
+```{r eval=FALSE}
+
+# Testing Code
+
+filtered_df %>% group_by(county_fips) %>% mutate(NA_outcome = sum(is.na(pop_pm))) %>% ungroup() %>% count(NA_outcome)
+
+h_df %>% group_by(county_fips) %>% mutate(NA_outcome = sum(is.na(log_pop))) %>% ungroup() %>% count(NA_outcome)
+
+h_df %>% group_by(county_fips) %>% mutate(NA_outcome = sum(is.na(log_wage_pc))) %>% ungroup() %>% count(NA_outcome)
+
+h_df %>% group_by(county_fips) %>% mutate(NA_outcome = sum(is.na(frac_young))) %>% ungroup() %>% count(NA_outcome)
+
+h_df %>% group_by(county_fips) %>% mutate(NA_outcome = sum(is.na(frac_old))) %>% ungroup() %>% count(NA_outcome)
+
+h_df %>% group_by(county_fips) %>% mutate(NA_outcome = sum(is.na(frac_black))) %>% ungroup() %>% count(NA_outcome)
+
+```
+
+### All
+
+```{r eval=FALSE}
+
+# Testing Code
+
+test_var <- c("pop_pm")
+
+h_df %>% group_by(county_fips) %>% mutate(NA_outcome = sum(is.na(test_var))) %>% ungroup() %>% count(NA_outcome) %>% pull(n) %>% .[[1]]
+
+```
+
+```{r eval=T}
+
+covar_list <- c("coastal", "pop_pm", "log_pop", "log_wage_pc", "frac_young", "frac_old", "frac_black")
+
+covar_miss_output <- vector("double", length(covar_list))
+
+for (i in seq_along(covar_list)) {
+  covar_miss_output[i] <- h_df %>%
+    group_by(county_fips) %>% 
+    summarise(NA_outcome = sum(is.na(!!sym(covar_list[i])))) %>% 
+    ungroup() %>% 
+    count(NA_outcome) %>% pull(n) %>% .[[1]]
+}
+
+# Count for Groups without Missing Outcome
+
+group_count <- h_df %>%
+    group_by(county_fips) %>% 
+    summarise(NA_outcome = sum(is.na(emp_rate_tot_adult))) %>% 
+    ungroup() %>% 
+    count(NA_outcome) %>% pull(n) %>% .[[1]]
+
+# Table
+
+data.frame(covar = covar_list,
+           diff = covar_miss_output - group_count)
+
+
+```
+
+
+## Filter Missing
+
+```{r eval=T}
+
+filtered_df <- h_df
+
+  filtered_df <- filtered_df %>%
+  group_by(county_fips) %>%
+  mutate(missing_group = ifelse(any(is.na(across(all_of(covar_list)))), 1, 0)) %>% 
+  filter(!any(missing_group == 1)) %>% 
+  ungroup()
+
+```
+
+
+
+```{r eval=T}
+
+covar_miss_output_TEST <- vector("double", length(covar_list))
+
+for (i in seq_along(covar_list)) {
+  covar_miss_output_TEST[i] <- filtered_df %>%
+    group_by(county_fips) %>% 
+    summarise(NA_outcome = sum(is.na(!!sym(covar_list[i])))) %>% 
+    ungroup() %>% 
+    count(NA_outcome) %>% pull(n) %>% .[[1]]
+}
+
+# Count for Groups without Missing Outcome
+
+group_count <- filtered_df %>%
+    group_by(county_fips) %>% 
+    summarise(NA_outcome = sum(is.na(emp_rate_tot_adult))) %>% 
+    ungroup() %>% 
+    count(NA_outcome) %>% pull(n) %>% .[[1]]
+
+# Table
+
+data.frame(covar = covar_list,
+           diff = covar_miss_output_TEST - group_count)
+
+
+```
+
+# gsynth estimation
+
+## Subset Data
+
+```{r eval=TRUE}
+
+var_list <- c("county_fips", "year", "emp_rate_tot_adult", "h_persist", covar_list)
+
+subset_df <- filtered_df %>% select(all_of(var_list))
+
+```
+
+
+## Covariates
+
+```{r}
+
+paste(covar_list, collapse = " + ")
+
+```
+coastal + pop_pm + log_pop + log_wage_pc + frac_young + frac_old + frac_black
+
+*NOTE* - Removing "coastal", since it is unit-invariant, and like in fixed effects, has already been controlled for: https://github.com/xuyiqing/gsynth/issues/40
+
+## NO Factors model
+
+Model without estimating factors. Similar to DiD.
+
+```{r eval=F}
+
+out0 <- gsynth(emp_rate_tot_adult ~ h_persist + pop_pm + log_pop + log_wage_pc + frac_young + frac_old + frac_black, 
+               data = subset_df, index = c("county_fips", "year"), 
+               se = TRUE, inference = "parametric", 
+               r = 0, CV = FALSE, force = "two-way", 
+               parallel = TRUE, cores = 4,
+               nboots = 1000, seed = 02139)
+
+```
+### Output
+```{r eval=TRUE}
+
+print(out0)
+writeLines(" \n---------- ATT by Period ----------\n ")
+out0$est.att
+writeLines(" \n---------- ATT averaged over all Periods ----------\n ")
+out0$est.avg
+writeLines(" \n---------- Betas of Time-Varying Covariates ----------\n ")
+out0$est.beta
+
+```
+
+### Plot
+
+```{r}
+
+plot(out0, theme.bw = FALSE) 
+
+```
+
+## Model 1
+
+Model without estimating factors. Similar to DiD.
+
+```{r eval=F}
+
+out1 <- gsynth(emp_rate_tot_adult ~ h_persist + pop_pm + log_pop + log_wage_pc + frac_young + frac_old + frac_black, 
+               data = subset_df, index = c("county_fips", "year"), 
+               se = TRUE, inference = "parametric", 
+               r = c(0, 5), CV = TRUE, force = "two-way", 
+               parallel = TRUE, cores = 6,
+               nboots = 1000, seed = 02139)
+
+```
+
+### Output
+
+```{r eval=TRUE}
+
+print(out1)
+writeLines(" \n---------- ATT by Period ----------\n ")
+out1$est.att
+writeLines(" \n---------- ATT averaged over all Periods ----------\n ")
+out1$est.avg
+writeLines(" \n---------- Betas of Time-Varying Covariates ----------\n ")
+out1$est.beta
+
+```
+
+### Plot
+
+```{r}
+
+plot(out1, theme.bw = FALSE) 
+
+```
+
+```{r}
+
+plot(out1, type = "loadings")
+
+```
+
+## Model 2
+
+You should use the EM method - https://yiqingxu.org/packages/gsynth/articles/tutorial.html#em-method
+
+## Model 3?
+
+Maybe cluster by state?
+
+# Results Notes
+
+##(07-23-2023)
+
+- Looking at results of Model1, you can see that the ATT goes from non-significant at 5 years after, to significant at 6 years after. This is probably in part because a bunch of treated units didn't make it to 6 years (n drops from 262 to 240), so these missing units changed things!
+  - I have to be careful here not to p-hack! Need to think through next steps...

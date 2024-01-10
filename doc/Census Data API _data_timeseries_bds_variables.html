@@ -1,0 +1,937 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en"><head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>Census Data API: /data/timeseries/bds/variables</title>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="DC.title" content="Census Data API: /data/timeseries/bds/variables">
+<meta name="DC.creator" content="Your friendly API robotic overlord">
+<meta name="DC.description" content="Census Data API: /data/timeseries/bds/variables">
+<meta name="DC.date.created" scheme="ISO8601" content="2011-11-28">
+<meta name="DC.date.reviewed" scheme="ISO8601" content="2022-09-07">
+<meta name="DC.language" scheme="DCTERMS.RFC1766" content="EN-US">
+<meta name="description" content="Census Data API: /data/timeseries/bds/variables">
+<style type="text/css">
+                    table {
+                        counter-reset: counter1 0;
+                        border: thin solid;
+                        border-collapse: collapse;
+                        width:100%;
+                        margin: 2em 0;
+                    }
+
+                    tfoot tr {
+                        border-top: double;
+                    }
+
+                    tfoot tr td {
+                        font-style: italic;
+                        padding-top: 1em;
+                        text-align: center;
+                        vertical-align: bottom;
+                    }
+
+                    th {
+                        vertical-align: bottom;
+                        background: #ACCCFF;
+                    }
+
+                    th, td {
+                        text-align: left;
+                        border: thin solid;
+                        padding: 0.2em;
+                    }
+
+                    caption {
+                        font-style: italic;
+                        padding: 1em;
+                    }
+
+                    tr:nth-child(even) {background: #CCC}
+                    tr:nth-child(odd) {background: #FFF}
+
+                    .hier-sep {
+                        font-style: italic;
+                        font-family: monospace;
+                    }
+
+                    .none, .na { font-style: italic }
+					.geo-level-id {
+						text-align: right;
+						padding-right: 1em;
+						width: 3em;
+						//font-size: smaller;
+					}
+
+                    .tagquery tr td { vertical-align: top }
+
+                    .counter1:before {
+                        counter-increment: counter1;
+                        content: counter(counter1);
+                    }
+
+                </style>
+                
+                
+</head>
+<body>
+<table>
+<caption>Census Data API: Variables in /data/timeseries/bds/variables</caption>
+<!--api:var /data/timeseries/bds-->
+<thead>
+<tr>
+<th>Name</th><th>Label</th><th>Concept</th><th>Required</th><th>Attributes</th><th>Limit</th><th>Predicate Type</th><th>Group</th>
+</tr>
+</thead>
+<tfoot>
+<tr>
+<td colspan="9">48 variables</td>
+</tr>
+</tfoot>
+<tbody>
+<tr>
+<td><a href="https://api.census.gov/data/timeseries/bds/variables/CBSA.json" name="CBSA">CBSA</a></td><td>Geography</td><td></td><td>not required</td><td><a href="https://api.census.gov/data/timeseries/bds/variables/.html"></a></td><td>0</td><td><span class="na">(not a predicate)</span></td><td>
+						N/A
+					</td>
+</tr>
+<tr>
+<td><a href="https://api.census.gov/data/timeseries/bds/variables/COUNTY.json" name="COUNTY">COUNTY</a></td><td>Geography</td><td></td><td>not required</td><td><a href="https://api.census.gov/data/timeseries/bds/variables/.html"></a></td><td>0</td><td><span class="na">(not a predicate)</span></td><td>
+						N/A
+					</td>
+</tr>
+<tr>
+<td><a href="https://api.census.gov/data/timeseries/bds/variables/DENOM.json" name="DENOM">DENOM</a></td><td>(DHS) denominator</td><td>Business
+ Dynamics Statistics: Establishment Age: 1978-2019;Business Dynamics 
+Statistics: Establishment Age by Establishment Size: 1978-2019;Business 
+Dynamics Statistics: Establishment Age by Initial Establishment Size: 
+1978-2019;Business Dynamics Statistics: Establishment Size: 
+1978-2019;Business Dynamics Statistics: Firm Age: 1978-2019;Business 
+Dynamics Statistics: Firm Age by Firm Size: 1978-2019;Business Dynamics 
+Statistics: Firm Age by Initial Firm Size: 1978-2019;Business Dynamics 
+Statistics: Firm Size: 1978-2019;Business Dynamics Statistics: 
+Geography: 1978-2019;Business Dynamics Statistics: Initial Establishment
+ Size: 1978-2019;Business Dynamics Statistics: Initial Firm Size: 
+1978-2019;Business Dynamics Statistics: Metro: 1978-2019;Business 
+Dynamics Statistics: NAICS: 1978-2019</td><td>not required</td><td><a href="https://api.census.gov/data/timeseries/bds/variables/DENOM_F.html">DENOM_F</a></td><td>0</td><td>int</td><td><a href="https://api.census.gov/data/timeseries/bds/groups/BDSIFSIZE.html">BDSIFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSGEO.html">BDSGEO</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGEFSIZE.html">BDSFAGEFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGEIESIZE.html">BDSEAGEIESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFSIZE.html">BDSFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGEIFSIZE.html">BDSFAGEIFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSIESIZE.html">BDSIESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSNAICS.html">BDSNAICS</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGE.html">BDSEAGE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGEESIZE.html">BDSEAGEESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGE.html">BDSFAGE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSMETRO.html">BDSMETRO</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSESIZE.html">BDSESIZE</a></td>
+</tr>
+<tr>
+<td><a href="https://api.census.gov/data/timeseries/bds/variables/EAGE.json" name="EAGE">EAGE</a></td><td>Establishment age code</td><td>Business
+ Dynamics Statistics: Establishment Age: 1978-2019;Business Dynamics 
+Statistics: Establishment Age by Establishment Size: 1978-2019;Business 
+Dynamics Statistics: Establishment Age by Initial Establishment Size: 
+1978-2019</td><td>default displayed</td><td><a href="https://api.census.gov/data/timeseries/bds/variables/EAGE_LABEL.html">EAGE_LABEL</a></td><td>0</td><td>string</td><td><a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGEIESIZE.html">BDSEAGEIESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGE.html">BDSEAGE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGEESIZE.html">BDSEAGEESIZE</a></td>
+</tr>
+<tr>
+<td><a href="https://api.census.gov/data/timeseries/bds/variables/EMP.json" name="EMP">EMP</a></td><td>Number of employees</td><td>Business
+ Dynamics Statistics: Establishment Age: 1978-2019;Business Dynamics 
+Statistics: Establishment Age by Establishment Size: 1978-2019;Business 
+Dynamics Statistics: Establishment Age by Initial Establishment Size: 
+1978-2019;Business Dynamics Statistics: Establishment Size: 
+1978-2019;Business Dynamics Statistics: Firm Age: 1978-2019;Business 
+Dynamics Statistics: Firm Age by Firm Size: 1978-2019;Business Dynamics 
+Statistics: Firm Age by Initial Firm Size: 1978-2019;Business Dynamics 
+Statistics: Firm Size: 1978-2019;Business Dynamics Statistics: 
+Geography: 1978-2019;Business Dynamics Statistics: Initial Establishment
+ Size: 1978-2019;Business Dynamics Statistics: Initial Firm Size: 
+1978-2019;Business Dynamics Statistics: Metro: 1978-2019;Business 
+Dynamics Statistics: NAICS: 1978-2019</td><td>not required</td><td><a href="https://api.census.gov/data/timeseries/bds/variables/EMP_F.html">EMP_F</a></td><td>0</td><td>int</td><td><a href="https://api.census.gov/data/timeseries/bds/groups/BDSIFSIZE.html">BDSIFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSGEO.html">BDSGEO</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGEFSIZE.html">BDSFAGEFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGEIESIZE.html">BDSEAGEIESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFSIZE.html">BDSFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGEIFSIZE.html">BDSFAGEIFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSIESIZE.html">BDSIESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSNAICS.html">BDSNAICS</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGE.html">BDSEAGE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGEESIZE.html">BDSEAGEESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGE.html">BDSFAGE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSMETRO.html">BDSMETRO</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSESIZE.html">BDSESIZE</a></td>
+</tr>
+<tr>
+<td><a href="https://api.census.gov/data/timeseries/bds/variables/EMPSZES.json" name="EMPSZES">EMPSZES</a></td><td>Employment size of establishments code</td><td>Business
+ Dynamics Statistics: Establishment Age by Establishment Size: 
+1978-2019;Business Dynamics Statistics: Establishment Size: 1978-2019</td><td>default displayed</td><td><a href="https://api.census.gov/data/timeseries/bds/variables/EMPSZES_LABEL.html">EMPSZES_LABEL</a></td><td>0</td><td>string</td><td><a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGEESIZE.html">BDSEAGEESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSESIZE.html">BDSESIZE</a></td>
+</tr>
+<tr>
+<td><a href="https://api.census.gov/data/timeseries/bds/variables/EMPSZESI.json" name="EMPSZESI">EMPSZESI</a></td><td>Initial employment size of establishments code</td><td>Business
+ Dynamics Statistics: Establishment Age by Initial Establishment Size: 
+1978-2019;Business Dynamics Statistics: Initial Establishment Size: 
+1978-2019</td><td>default displayed</td><td><a href="https://api.census.gov/data/timeseries/bds/variables/EMPSZESI_LABEL.html">EMPSZESI_LABEL</a></td><td>0</td><td>string</td><td><a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGEIESIZE.html">BDSEAGEIESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSIESIZE.html">BDSIESIZE</a></td>
+</tr>
+<tr>
+<td><a href="https://api.census.gov/data/timeseries/bds/variables/EMPSZFI.json" name="EMPSZFI">EMPSZFI</a></td><td>Employment size of firms code</td><td>Business Dynamics Statistics: Firm Age by Firm Size: 1978-2019;Business Dynamics Statistics: Firm Size: 1978-2019</td><td>default displayed</td><td><a href="https://api.census.gov/data/timeseries/bds/variables/EMPSZFI_LABEL.html">EMPSZFI_LABEL</a></td><td>0</td><td>string</td><td><a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGEFSIZE.html">BDSFAGEFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFSIZE.html">BDSFSIZE</a></td>
+</tr>
+<tr>
+<td><a href="https://api.census.gov/data/timeseries/bds/variables/EMPSZFII.json" name="EMPSZFII">EMPSZFII</a></td><td>Initial employment size of firms code</td><td>Business
+ Dynamics Statistics: Firm Age by Initial Firm Size: 1978-2019;Business 
+Dynamics Statistics: Initial Firm Size: 1978-2019</td><td>default displayed</td><td><a href="https://api.census.gov/data/timeseries/bds/variables/EMPSZFII_LABEL.html">EMPSZFII_LABEL</a></td><td>0</td><td>string</td><td><a href="https://api.census.gov/data/timeseries/bds/groups/BDSIFSIZE.html">BDSIFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGEIFSIZE.html">BDSFAGEIFSIZE</a></td>
+</tr>
+<tr>
+<td><a href="https://api.census.gov/data/timeseries/bds/variables/ESTAB.json" name="ESTAB">ESTAB</a></td><td>Number of establishments</td><td>Business
+ Dynamics Statistics: Establishment Age: 1978-2019;Business Dynamics 
+Statistics: Establishment Age by Establishment Size: 1978-2019;Business 
+Dynamics Statistics: Establishment Age by Initial Establishment Size: 
+1978-2019;Business Dynamics Statistics: Establishment Size: 
+1978-2019;Business Dynamics Statistics: Firm Age: 1978-2019;Business 
+Dynamics Statistics: Firm Age by Firm Size: 1978-2019;Business Dynamics 
+Statistics: Firm Age by Initial Firm Size: 1978-2019;Business Dynamics 
+Statistics: Firm Size: 1978-2019;Business Dynamics Statistics: 
+Geography: 1978-2019;Business Dynamics Statistics: Initial Establishment
+ Size: 1978-2019;Business Dynamics Statistics: Initial Firm Size: 
+1978-2019;Business Dynamics Statistics: Metro: 1978-2019;Business 
+Dynamics Statistics: NAICS: 1978-2019</td><td>not required</td><td><a href="https://api.census.gov/data/timeseries/bds/variables/ESTAB_F.html">ESTAB_F</a></td><td>0</td><td>int</td><td><a href="https://api.census.gov/data/timeseries/bds/groups/BDSIFSIZE.html">BDSIFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSGEO.html">BDSGEO</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGEFSIZE.html">BDSFAGEFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGEIESIZE.html">BDSEAGEIESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFSIZE.html">BDSFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGEIFSIZE.html">BDSFAGEIFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSIESIZE.html">BDSIESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSNAICS.html">BDSNAICS</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGE.html">BDSEAGE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGEESIZE.html">BDSEAGEESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGE.html">BDSFAGE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSMETRO.html">BDSMETRO</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSESIZE.html">BDSESIZE</a></td>
+</tr>
+<tr>
+<td><a href="https://api.census.gov/data/timeseries/bds/variables/ESTABS_ENTRY.json" name="ESTABS_ENTRY">ESTABS_ENTRY</a></td><td>Number of establishments born during the last 12 months</td><td>Business
+ Dynamics Statistics: Establishment Age: 1978-2019;Business Dynamics 
+Statistics: Establishment Age by Establishment Size: 1978-2019;Business 
+Dynamics Statistics: Establishment Age by Initial Establishment Size: 
+1978-2019;Business Dynamics Statistics: Establishment Size: 
+1978-2019;Business Dynamics Statistics: Firm Age: 1978-2019;Business 
+Dynamics Statistics: Firm Age by Firm Size: 1978-2019;Business Dynamics 
+Statistics: Firm Age by Initial Firm Size: 1978-2019;Business Dynamics 
+Statistics: Firm Size: 1978-2019;Business Dynamics Statistics: 
+Geography: 1978-2019;Business Dynamics Statistics: Initial Establishment
+ Size: 1978-2019;Business Dynamics Statistics: Initial Firm Size: 
+1978-2019;Business Dynamics Statistics: Metro: 1978-2019;Business 
+Dynamics Statistics: NAICS: 1978-2019</td><td>not required</td><td><a href="https://api.census.gov/data/timeseries/bds/variables/ESTABS_ENTRY_F.html">ESTABS_ENTRY_F</a></td><td>0</td><td>int</td><td><a href="https://api.census.gov/data/timeseries/bds/groups/BDSIFSIZE.html">BDSIFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSGEO.html">BDSGEO</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGEFSIZE.html">BDSFAGEFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGEIESIZE.html">BDSEAGEIESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFSIZE.html">BDSFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGEIFSIZE.html">BDSFAGEIFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSIESIZE.html">BDSIESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSNAICS.html">BDSNAICS</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGE.html">BDSEAGE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGEESIZE.html">BDSEAGEESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGE.html">BDSFAGE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSMETRO.html">BDSMETRO</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSESIZE.html">BDSESIZE</a></td>
+</tr>
+<tr>
+<td><a href="https://api.census.gov/data/timeseries/bds/variables/ESTABS_ENTRY_RATE.json" name="ESTABS_ENTRY_RATE">ESTABS_ENTRY_RATE</a></td><td>Rate of establishments born during the last 12 months</td><td>Business
+ Dynamics Statistics: Establishment Age: 1978-2019;Business Dynamics 
+Statistics: Establishment Age by Establishment Size: 1978-2019;Business 
+Dynamics Statistics: Establishment Age by Initial Establishment Size: 
+1978-2019;Business Dynamics Statistics: Establishment Size: 
+1978-2019;Business Dynamics Statistics: Firm Age: 1978-2019;Business 
+Dynamics Statistics: Firm Age by Firm Size: 1978-2019;Business Dynamics 
+Statistics: Firm Age by Initial Firm Size: 1978-2019;Business Dynamics 
+Statistics: Firm Size: 1978-2019;Business Dynamics Statistics: 
+Geography: 1978-2019;Business Dynamics Statistics: Initial Establishment
+ Size: 1978-2019;Business Dynamics Statistics: Initial Firm Size: 
+1978-2019;Business Dynamics Statistics: Metro: 1978-2019;Business 
+Dynamics Statistics: NAICS: 1978-2019</td><td>not required</td><td><a href="https://api.census.gov/data/timeseries/bds/variables/ESTABS_ENTRY_RATE_F.html">ESTABS_ENTRY_RATE_F</a></td><td>0</td><td>float</td><td><a href="https://api.census.gov/data/timeseries/bds/groups/BDSIFSIZE.html">BDSIFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSGEO.html">BDSGEO</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGEFSIZE.html">BDSFAGEFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGEIESIZE.html">BDSEAGEIESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFSIZE.html">BDSFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGEIFSIZE.html">BDSFAGEIFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSIESIZE.html">BDSIESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSNAICS.html">BDSNAICS</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGE.html">BDSEAGE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGEESIZE.html">BDSEAGEESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGE.html">BDSFAGE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSMETRO.html">BDSMETRO</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSESIZE.html">BDSESIZE</a></td>
+</tr>
+<tr>
+<td><a href="https://api.census.gov/data/timeseries/bds/variables/ESTABS_EXIT.json" name="ESTABS_EXIT">ESTABS_EXIT</a></td><td>Number of establishments exited during the last 12 months</td><td>Business
+ Dynamics Statistics: Establishment Age: 1978-2019;Business Dynamics 
+Statistics: Establishment Age by Establishment Size: 1978-2019;Business 
+Dynamics Statistics: Establishment Age by Initial Establishment Size: 
+1978-2019;Business Dynamics Statistics: Establishment Size: 
+1978-2019;Business Dynamics Statistics: Firm Age: 1978-2019;Business 
+Dynamics Statistics: Firm Age by Firm Size: 1978-2019;Business Dynamics 
+Statistics: Firm Age by Initial Firm Size: 1978-2019;Business Dynamics 
+Statistics: Firm Size: 1978-2019;Business Dynamics Statistics: 
+Geography: 1978-2019;Business Dynamics Statistics: Initial Establishment
+ Size: 1978-2019;Business Dynamics Statistics: Initial Firm Size: 
+1978-2019;Business Dynamics Statistics: Metro: 1978-2019;Business 
+Dynamics Statistics: NAICS: 1978-2019</td><td>not required</td><td><a href="https://api.census.gov/data/timeseries/bds/variables/ESTABS_EXIT_F.html">ESTABS_EXIT_F</a></td><td>0</td><td>int</td><td><a href="https://api.census.gov/data/timeseries/bds/groups/BDSIFSIZE.html">BDSIFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSGEO.html">BDSGEO</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGEFSIZE.html">BDSFAGEFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGEIESIZE.html">BDSEAGEIESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFSIZE.html">BDSFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGEIFSIZE.html">BDSFAGEIFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSIESIZE.html">BDSIESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSNAICS.html">BDSNAICS</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGE.html">BDSEAGE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGEESIZE.html">BDSEAGEESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGE.html">BDSFAGE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSMETRO.html">BDSMETRO</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSESIZE.html">BDSESIZE</a></td>
+</tr>
+<tr>
+<td><a href="https://api.census.gov/data/timeseries/bds/variables/ESTABS_EXIT_RATE.json" name="ESTABS_EXIT_RATE">ESTABS_EXIT_RATE</a></td><td>Rate of establishments exited during the last 12 months</td><td>Business
+ Dynamics Statistics: Establishment Age: 1978-2019;Business Dynamics 
+Statistics: Establishment Age by Establishment Size: 1978-2019;Business 
+Dynamics Statistics: Establishment Age by Initial Establishment Size: 
+1978-2019;Business Dynamics Statistics: Establishment Size: 
+1978-2019;Business Dynamics Statistics: Firm Age: 1978-2019;Business 
+Dynamics Statistics: Firm Age by Firm Size: 1978-2019;Business Dynamics 
+Statistics: Firm Age by Initial Firm Size: 1978-2019;Business Dynamics 
+Statistics: Firm Size: 1978-2019;Business Dynamics Statistics: 
+Geography: 1978-2019;Business Dynamics Statistics: Initial Establishment
+ Size: 1978-2019;Business Dynamics Statistics: Initial Firm Size: 
+1978-2019;Business Dynamics Statistics: Metro: 1978-2019;Business 
+Dynamics Statistics: NAICS: 1978-2019</td><td>not required</td><td><a href="https://api.census.gov/data/timeseries/bds/variables/ESTABS_EXIT_RATE_F.html">ESTABS_EXIT_RATE_F</a></td><td>0</td><td>float</td><td><a href="https://api.census.gov/data/timeseries/bds/groups/BDSIFSIZE.html">BDSIFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSGEO.html">BDSGEO</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGEFSIZE.html">BDSFAGEFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGEIESIZE.html">BDSEAGEIESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFSIZE.html">BDSFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGEIFSIZE.html">BDSFAGEIFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSIESIZE.html">BDSIESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSNAICS.html">BDSNAICS</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGE.html">BDSEAGE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGEESIZE.html">BDSEAGEESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGE.html">BDSFAGE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSMETRO.html">BDSMETRO</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSESIZE.html">BDSESIZE</a></td>
+</tr>
+<tr>
+<td><a href="https://api.census.gov/data/timeseries/bds/variables/FAGE.json" name="FAGE">FAGE</a></td><td>Firm age code</td><td>Business
+ Dynamics Statistics: Firm Age: 1978-2019;Business Dynamics Statistics: 
+Firm Age by Firm Size: 1978-2019;Business Dynamics Statistics: Firm Age 
+by Initial Firm Size: 1978-2019</td><td>default displayed</td><td><a href="https://api.census.gov/data/timeseries/bds/variables/FAGE_LABEL.html">FAGE_LABEL</a></td><td>0</td><td>string</td><td><a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGEFSIZE.html">BDSFAGEFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGEIFSIZE.html">BDSFAGEIFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGE.html">BDSFAGE</a></td>
+</tr>
+<tr>
+<td><a href="https://api.census.gov/data/timeseries/bds/variables/FIRM.json" name="FIRM">FIRM</a></td><td>Number of firms</td><td>Business
+ Dynamics Statistics: Establishment Age: 1978-2019;Business Dynamics 
+Statistics: Establishment Age by Establishment Size: 1978-2019;Business 
+Dynamics Statistics: Establishment Age by Initial Establishment Size: 
+1978-2019;Business Dynamics Statistics: Establishment Size: 
+1978-2019;Business Dynamics Statistics: Firm Age: 1978-2019;Business 
+Dynamics Statistics: Firm Age by Firm Size: 1978-2019;Business Dynamics 
+Statistics: Firm Age by Initial Firm Size: 1978-2019;Business Dynamics 
+Statistics: Firm Size: 1978-2019;Business Dynamics Statistics: 
+Geography: 1978-2019;Business Dynamics Statistics: Initial Establishment
+ Size: 1978-2019;Business Dynamics Statistics: Initial Firm Size: 
+1978-2019;Business Dynamics Statistics: Metro: 1978-2019;Business 
+Dynamics Statistics: NAICS: 1978-2019</td><td>not required</td><td><a href="https://api.census.gov/data/timeseries/bds/variables/FIRM_F.html">FIRM_F</a></td><td>0</td><td>int</td><td><a href="https://api.census.gov/data/timeseries/bds/groups/BDSIFSIZE.html">BDSIFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSGEO.html">BDSGEO</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGEFSIZE.html">BDSFAGEFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGEIESIZE.html">BDSEAGEIESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFSIZE.html">BDSFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGEIFSIZE.html">BDSFAGEIFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSIESIZE.html">BDSIESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSNAICS.html">BDSNAICS</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGE.html">BDSEAGE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGEESIZE.html">BDSEAGEESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGE.html">BDSFAGE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSMETRO.html">BDSMETRO</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSESIZE.html">BDSESIZE</a></td>
+</tr>
+<tr>
+<td><a href="https://api.census.gov/data/timeseries/bds/variables/FIRMDEATH_EMP.json" name="FIRMDEATH_EMP">FIRMDEATH_EMP</a></td><td>Number of employees associated with firm deaths during the last 12 months</td><td>Business
+ Dynamics Statistics: Establishment Age: 1978-2019;Business Dynamics 
+Statistics: Establishment Age by Establishment Size: 1978-2019;Business 
+Dynamics Statistics: Establishment Age by Initial Establishment Size: 
+1978-2019;Business Dynamics Statistics: Establishment Size: 
+1978-2019;Business Dynamics Statistics: Firm Age: 1978-2019;Business 
+Dynamics Statistics: Firm Age by Firm Size: 1978-2019;Business Dynamics 
+Statistics: Firm Age by Initial Firm Size: 1978-2019;Business Dynamics 
+Statistics: Firm Size: 1978-2019;Business Dynamics Statistics: 
+Geography: 1978-2019;Business Dynamics Statistics: Initial Establishment
+ Size: 1978-2019;Business Dynamics Statistics: Initial Firm Size: 
+1978-2019;Business Dynamics Statistics: Metro: 1978-2019;Business 
+Dynamics Statistics: NAICS: 1978-2019</td><td>not required</td><td><a href="https://api.census.gov/data/timeseries/bds/variables/FIRMDEATH_EMP_F.html">FIRMDEATH_EMP_F</a></td><td>0</td><td>int</td><td><a href="https://api.census.gov/data/timeseries/bds/groups/BDSIFSIZE.html">BDSIFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSGEO.html">BDSGEO</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGEFSIZE.html">BDSFAGEFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGEIESIZE.html">BDSEAGEIESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFSIZE.html">BDSFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGEIFSIZE.html">BDSFAGEIFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSIESIZE.html">BDSIESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSNAICS.html">BDSNAICS</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGE.html">BDSEAGE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGEESIZE.html">BDSEAGEESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGE.html">BDSFAGE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSMETRO.html">BDSMETRO</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSESIZE.html">BDSESIZE</a></td>
+</tr>
+<tr>
+<td><a href="https://api.census.gov/data/timeseries/bds/variables/FIRMDEATH_ESTABS.json" name="FIRMDEATH_ESTABS">FIRMDEATH_ESTABS</a></td><td>Number of establishments associated with firm deaths during the last 12 months</td><td>Business
+ Dynamics Statistics: Establishment Age: 1978-2019;Business Dynamics 
+Statistics: Establishment Age by Establishment Size: 1978-2019;Business 
+Dynamics Statistics: Establishment Age by Initial Establishment Size: 
+1978-2019;Business Dynamics Statistics: Establishment Size: 
+1978-2019;Business Dynamics Statistics: Firm Age: 1978-2019;Business 
+Dynamics Statistics: Firm Age by Firm Size: 1978-2019;Business Dynamics 
+Statistics: Firm Age by Initial Firm Size: 1978-2019;Business Dynamics 
+Statistics: Firm Size: 1978-2019;Business Dynamics Statistics: 
+Geography: 1978-2019;Business Dynamics Statistics: Initial Establishment
+ Size: 1978-2019;Business Dynamics Statistics: Initial Firm Size: 
+1978-2019;Business Dynamics Statistics: Metro: 1978-2019;Business 
+Dynamics Statistics: NAICS: 1978-2019</td><td>not required</td><td><a href="https://api.census.gov/data/timeseries/bds/variables/FIRMDEATH_ESTABS_F.html">FIRMDEATH_ESTABS_F</a></td><td>0</td><td>int</td><td><a href="https://api.census.gov/data/timeseries/bds/groups/BDSIFSIZE.html">BDSIFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSGEO.html">BDSGEO</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGEFSIZE.html">BDSFAGEFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGEIESIZE.html">BDSEAGEIESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFSIZE.html">BDSFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGEIFSIZE.html">BDSFAGEIFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSIESIZE.html">BDSIESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSNAICS.html">BDSNAICS</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGE.html">BDSEAGE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGEESIZE.html">BDSEAGEESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGE.html">BDSFAGE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSMETRO.html">BDSMETRO</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSESIZE.html">BDSESIZE</a></td>
+</tr>
+<tr>
+<td><a href="https://api.census.gov/data/timeseries/bds/variables/FIRMDEATH_FIRMS.json" name="FIRMDEATH_FIRMS">FIRMDEATH_FIRMS</a></td><td>Number of firms that exited during the last 12 months</td><td>Business
+ Dynamics Statistics: Establishment Age: 1978-2019;Business Dynamics 
+Statistics: Establishment Age by Establishment Size: 1978-2019;Business 
+Dynamics Statistics: Establishment Age by Initial Establishment Size: 
+1978-2019;Business Dynamics Statistics: Establishment Size: 
+1978-2019;Business Dynamics Statistics: Firm Age: 1978-2019;Business 
+Dynamics Statistics: Firm Age by Firm Size: 1978-2019;Business Dynamics 
+Statistics: Firm Age by Initial Firm Size: 1978-2019;Business Dynamics 
+Statistics: Firm Size: 1978-2019;Business Dynamics Statistics: 
+Geography: 1978-2019;Business Dynamics Statistics: Initial Establishment
+ Size: 1978-2019;Business Dynamics Statistics: Initial Firm Size: 
+1978-2019;Business Dynamics Statistics: Metro: 1978-2019;Business 
+Dynamics Statistics: NAICS: 1978-2019</td><td>not required</td><td><a href="https://api.census.gov/data/timeseries/bds/variables/FIRMDEATH_FIRMS_F.html">FIRMDEATH_FIRMS_F</a></td><td>0</td><td>int</td><td><a href="https://api.census.gov/data/timeseries/bds/groups/BDSIFSIZE.html">BDSIFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSGEO.html">BDSGEO</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGEFSIZE.html">BDSFAGEFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGEIESIZE.html">BDSEAGEIESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFSIZE.html">BDSFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGEIFSIZE.html">BDSFAGEIFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSIESIZE.html">BDSIESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSNAICS.html">BDSNAICS</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGE.html">BDSEAGE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGEESIZE.html">BDSEAGEESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGE.html">BDSFAGE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSMETRO.html">BDSMETRO</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSESIZE.html">BDSESIZE</a></td>
+</tr>
+<tr>
+<td><a href="https://api.census.gov/data/timeseries/bds/variables/for.json" name="for">for</a></td><td>Census API FIPS 'for' clause</td><td>Census API Geography Specification</td><td>predicate-only</td><td><a href="https://api.census.gov/data/timeseries/bds/variables/.html"></a></td><td>0</td><td>fips-for</td><td>
+						N/A
+					</td>
+</tr>
+<tr>
+<td><a href="https://api.census.gov/data/timeseries/bds/variables/GEO_ID.json" name="GEO_ID">GEO_ID</a></td><td>Geographic identifier code</td><td>Business
+ Dynamics Statistics: Establishment Age: 1978-2019;Business Dynamics 
+Statistics: Establishment Age by Establishment Size: 1978-2019;Business 
+Dynamics Statistics: Establishment Age by Initial Establishment Size: 
+1978-2019;Business Dynamics Statistics: Establishment Size: 
+1978-2019;Business Dynamics Statistics: Firm Age: 1978-2019;Business 
+Dynamics Statistics: Firm Age by Firm Size: 1978-2019;Business Dynamics 
+Statistics: Firm Age by Initial Firm Size: 1978-2019;Business Dynamics 
+Statistics: Firm Size: 1978-2019;Business Dynamics Statistics: 
+Geography: 1978-2019;Business Dynamics Statistics: Initial Establishment
+ Size: 1978-2019;Business Dynamics Statistics: Initial Firm Size: 
+1978-2019;Business Dynamics Statistics: Metro: 1978-2019;Business 
+Dynamics Statistics: NAICS: 1978-2019</td><td>not required</td><td><a href="https://api.census.gov/data/timeseries/bds/variables/NAME.html">NAME</a></td><td>0</td><td>string</td><td><a href="https://api.census.gov/data/timeseries/bds/groups/BDSIFSIZE.html">BDSIFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSGEO.html">BDSGEO</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGEFSIZE.html">BDSFAGEFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGEIESIZE.html">BDSEAGEIESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFSIZE.html">BDSFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGEIFSIZE.html">BDSFAGEIFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSIESIZE.html">BDSIESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSNAICS.html">BDSNAICS</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGE.html">BDSEAGE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGEESIZE.html">BDSEAGEESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGE.html">BDSFAGE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSMETRO.html">BDSMETRO</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSESIZE.html">BDSESIZE</a></td>
+</tr>
+<tr>
+<td><a href="https://api.census.gov/data/timeseries/bds/variables/GEOCOMP.json" name="GEOCOMP">GEOCOMP</a></td><td>GEO_ID Component</td><td></td><td>default displayed</td><td><a href="https://api.census.gov/data/timeseries/bds/variables/.html"></a></td><td>0</td><td>string</td><td>
+						N/A
+					</td>
+</tr>
+<tr>
+<td><a href="https://api.census.gov/data/timeseries/bds/variables/in.json" name="in">in</a></td><td>Census API FIPS 'in' clause</td><td>Census API Geography Specification</td><td>predicate-only</td><td><a href="https://api.census.gov/data/timeseries/bds/variables/.html"></a></td><td>0</td><td>fips-in</td><td>
+						N/A
+					</td>
+</tr>
+<tr>
+<td><a href="https://api.census.gov/data/timeseries/bds/variables/INDGROUP.json" name="INDGROUP">INDGROUP</a></td><td>Industry group</td><td></td><td>not required</td><td><a href="https://api.census.gov/data/timeseries/bds/variables/.html"></a></td><td>0</td><td>string</td><td>
+						N/A
+					</td>
+</tr>
+<tr>
+<td><a href="https://api.census.gov/data/timeseries/bds/variables/INDLEVEL.json" name="INDLEVEL">INDLEVEL</a></td><td>Industry level</td><td></td><td>not required</td><td><a href="https://api.census.gov/data/timeseries/bds/variables/.html"></a></td><td>0</td><td>int</td><td>
+						N/A
+					</td>
+</tr>
+<tr>
+<td><a href="https://api.census.gov/data/timeseries/bds/variables/JOB_CREATION.json" name="JOB_CREATION">JOB_CREATION</a></td><td>Number of jobs created from expanding and opening establishments during the last 12 months</td><td>Business
+ Dynamics Statistics: Establishment Age: 1978-2019;Business Dynamics 
+Statistics: Establishment Age by Establishment Size: 1978-2019;Business 
+Dynamics Statistics: Establishment Age by Initial Establishment Size: 
+1978-2019;Business Dynamics Statistics: Establishment Size: 
+1978-2019;Business Dynamics Statistics: Firm Age: 1978-2019;Business 
+Dynamics Statistics: Firm Age by Firm Size: 1978-2019;Business Dynamics 
+Statistics: Firm Age by Initial Firm Size: 1978-2019;Business Dynamics 
+Statistics: Firm Size: 1978-2019;Business Dynamics Statistics: 
+Geography: 1978-2019;Business Dynamics Statistics: Initial Establishment
+ Size: 1978-2019;Business Dynamics Statistics: Initial Firm Size: 
+1978-2019;Business Dynamics Statistics: Metro: 1978-2019;Business 
+Dynamics Statistics: NAICS: 1978-2019</td><td>not required</td><td><a href="https://api.census.gov/data/timeseries/bds/variables/JOB_CREATION_F.html">JOB_CREATION_F</a></td><td>0</td><td>int</td><td><a href="https://api.census.gov/data/timeseries/bds/groups/BDSIFSIZE.html">BDSIFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSGEO.html">BDSGEO</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGEFSIZE.html">BDSFAGEFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGEIESIZE.html">BDSEAGEIESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFSIZE.html">BDSFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGEIFSIZE.html">BDSFAGEIFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSIESIZE.html">BDSIESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSNAICS.html">BDSNAICS</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGE.html">BDSEAGE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGEESIZE.html">BDSEAGEESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGE.html">BDSFAGE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSMETRO.html">BDSMETRO</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSESIZE.html">BDSESIZE</a></td>
+</tr>
+<tr>
+<td><a href="https://api.census.gov/data/timeseries/bds/variables/JOB_CREATION_BIRTHS.json" name="JOB_CREATION_BIRTHS">JOB_CREATION_BIRTHS</a></td><td>Number of jobs created from opening establishments during the last 12 months</td><td>Business
+ Dynamics Statistics: Establishment Age: 1978-2019;Business Dynamics 
+Statistics: Establishment Age by Establishment Size: 1978-2019;Business 
+Dynamics Statistics: Establishment Age by Initial Establishment Size: 
+1978-2019;Business Dynamics Statistics: Establishment Size: 
+1978-2019;Business Dynamics Statistics: Firm Age: 1978-2019;Business 
+Dynamics Statistics: Firm Age by Firm Size: 1978-2019;Business Dynamics 
+Statistics: Firm Age by Initial Firm Size: 1978-2019;Business Dynamics 
+Statistics: Firm Size: 1978-2019;Business Dynamics Statistics: 
+Geography: 1978-2019;Business Dynamics Statistics: Initial Establishment
+ Size: 1978-2019;Business Dynamics Statistics: Initial Firm Size: 
+1978-2019;Business Dynamics Statistics: Metro: 1978-2019;Business 
+Dynamics Statistics: NAICS: 1978-2019</td><td>not required</td><td><a href="https://api.census.gov/data/timeseries/bds/variables/JOB_CREATION_BIRTHS_F.html">JOB_CREATION_BIRTHS_F</a></td><td>0</td><td>int</td><td><a href="https://api.census.gov/data/timeseries/bds/groups/BDSIFSIZE.html">BDSIFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSGEO.html">BDSGEO</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGEFSIZE.html">BDSFAGEFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGEIESIZE.html">BDSEAGEIESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFSIZE.html">BDSFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGEIFSIZE.html">BDSFAGEIFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSIESIZE.html">BDSIESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSNAICS.html">BDSNAICS</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGE.html">BDSEAGE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGEESIZE.html">BDSEAGEESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGE.html">BDSFAGE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSMETRO.html">BDSMETRO</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSESIZE.html">BDSESIZE</a></td>
+</tr>
+<tr>
+<td><a href="https://api.census.gov/data/timeseries/bds/variables/JOB_CREATION_CONTINUERS.json" name="JOB_CREATION_CONTINUERS">JOB_CREATION_CONTINUERS</a></td><td>Number of jobs created from expanding establishments during the last 12 months</td><td>Business
+ Dynamics Statistics: Establishment Age: 1978-2019;Business Dynamics 
+Statistics: Establishment Age by Establishment Size: 1978-2019;Business 
+Dynamics Statistics: Establishment Age by Initial Establishment Size: 
+1978-2019;Business Dynamics Statistics: Establishment Size: 
+1978-2019;Business Dynamics Statistics: Firm Age: 1978-2019;Business 
+Dynamics Statistics: Firm Age by Firm Size: 1978-2019;Business Dynamics 
+Statistics: Firm Age by Initial Firm Size: 1978-2019;Business Dynamics 
+Statistics: Firm Size: 1978-2019;Business Dynamics Statistics: 
+Geography: 1978-2019;Business Dynamics Statistics: Initial Establishment
+ Size: 1978-2019;Business Dynamics Statistics: Initial Firm Size: 
+1978-2019;Business Dynamics Statistics: Metro: 1978-2019;Business 
+Dynamics Statistics: NAICS: 1978-2019</td><td>not required</td><td><a href="https://api.census.gov/data/timeseries/bds/variables/JOB_CREATION_CONTINUERS_F.html">JOB_CREATION_CONTINUERS_F</a></td><td>0</td><td>int</td><td><a href="https://api.census.gov/data/timeseries/bds/groups/BDSIFSIZE.html">BDSIFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSGEO.html">BDSGEO</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGEFSIZE.html">BDSFAGEFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGEIESIZE.html">BDSEAGEIESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFSIZE.html">BDSFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGEIFSIZE.html">BDSFAGEIFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSIESIZE.html">BDSIESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSNAICS.html">BDSNAICS</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGE.html">BDSEAGE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGEESIZE.html">BDSEAGEESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGE.html">BDSFAGE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSMETRO.html">BDSMETRO</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSESIZE.html">BDSESIZE</a></td>
+</tr>
+<tr>
+<td><a href="https://api.census.gov/data/timeseries/bds/variables/JOB_CREATION_RATE.json" name="JOB_CREATION_RATE">JOB_CREATION_RATE</a></td><td>Rate of jobs created from expanding and opening establishments during the last 12 months</td><td>Business
+ Dynamics Statistics: Establishment Age: 1978-2019;Business Dynamics 
+Statistics: Establishment Age by Establishment Size: 1978-2019;Business 
+Dynamics Statistics: Establishment Age by Initial Establishment Size: 
+1978-2019;Business Dynamics Statistics: Establishment Size: 
+1978-2019;Business Dynamics Statistics: Firm Age: 1978-2019;Business 
+Dynamics Statistics: Firm Age by Firm Size: 1978-2019;Business Dynamics 
+Statistics: Firm Age by Initial Firm Size: 1978-2019;Business Dynamics 
+Statistics: Firm Size: 1978-2019;Business Dynamics Statistics: 
+Geography: 1978-2019;Business Dynamics Statistics: Initial Establishment
+ Size: 1978-2019;Business Dynamics Statistics: Initial Firm Size: 
+1978-2019;Business Dynamics Statistics: Metro: 1978-2019;Business 
+Dynamics Statistics: NAICS: 1978-2019</td><td>not required</td><td><a href="https://api.census.gov/data/timeseries/bds/variables/JOB_CREATION_RATE_F.html">JOB_CREATION_RATE_F</a></td><td>0</td><td>float</td><td><a href="https://api.census.gov/data/timeseries/bds/groups/BDSIFSIZE.html">BDSIFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSGEO.html">BDSGEO</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGEFSIZE.html">BDSFAGEFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGEIESIZE.html">BDSEAGEIESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFSIZE.html">BDSFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGEIFSIZE.html">BDSFAGEIFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSIESIZE.html">BDSIESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSNAICS.html">BDSNAICS</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGE.html">BDSEAGE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGEESIZE.html">BDSEAGEESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGE.html">BDSFAGE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSMETRO.html">BDSMETRO</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSESIZE.html">BDSESIZE</a></td>
+</tr>
+<tr>
+<td><a href="https://api.census.gov/data/timeseries/bds/variables/JOB_CREATION_RATE_BIRTHS.json" name="JOB_CREATION_RATE_BIRTHS">JOB_CREATION_RATE_BIRTHS</a></td><td>Rate of jobs created from opening establishments during the last 12 months</td><td>Business
+ Dynamics Statistics: Establishment Age: 1978-2019;Business Dynamics 
+Statistics: Establishment Age by Establishment Size: 1978-2019;Business 
+Dynamics Statistics: Establishment Age by Initial Establishment Size: 
+1978-2019;Business Dynamics Statistics: Establishment Size: 
+1978-2019;Business Dynamics Statistics: Firm Age: 1978-2019;Business 
+Dynamics Statistics: Firm Age by Firm Size: 1978-2019;Business Dynamics 
+Statistics: Firm Age by Initial Firm Size: 1978-2019;Business Dynamics 
+Statistics: Firm Size: 1978-2019;Business Dynamics Statistics: 
+Geography: 1978-2019;Business Dynamics Statistics: Initial Establishment
+ Size: 1978-2019;Business Dynamics Statistics: Initial Firm Size: 
+1978-2019;Business Dynamics Statistics: Metro: 1978-2019;Business 
+Dynamics Statistics: NAICS: 1978-2019</td><td>not required</td><td><a href="https://api.census.gov/data/timeseries/bds/variables/JOB_CREATION_RATE_BIRTHS_F.html">JOB_CREATION_RATE_BIRTHS_F</a></td><td>0</td><td>float</td><td><a href="https://api.census.gov/data/timeseries/bds/groups/BDSIFSIZE.html">BDSIFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSGEO.html">BDSGEO</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGEFSIZE.html">BDSFAGEFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGEIESIZE.html">BDSEAGEIESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFSIZE.html">BDSFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGEIFSIZE.html">BDSFAGEIFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSIESIZE.html">BDSIESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSNAICS.html">BDSNAICS</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGE.html">BDSEAGE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGEESIZE.html">BDSEAGEESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGE.html">BDSFAGE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSMETRO.html">BDSMETRO</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSESIZE.html">BDSESIZE</a></td>
+</tr>
+<tr>
+<td><a href="https://api.census.gov/data/timeseries/bds/variables/JOB_DESTRUCTION.json" name="JOB_DESTRUCTION">JOB_DESTRUCTION</a></td><td>Number of jobs lost from contracting and closing establishments during the last 12 months</td><td>Business
+ Dynamics Statistics: Establishment Age: 1978-2019;Business Dynamics 
+Statistics: Establishment Age by Establishment Size: 1978-2019;Business 
+Dynamics Statistics: Establishment Age by Initial Establishment Size: 
+1978-2019;Business Dynamics Statistics: Establishment Size: 
+1978-2019;Business Dynamics Statistics: Firm Age: 1978-2019;Business 
+Dynamics Statistics: Firm Age by Firm Size: 1978-2019;Business Dynamics 
+Statistics: Firm Age by Initial Firm Size: 1978-2019;Business Dynamics 
+Statistics: Firm Size: 1978-2019;Business Dynamics Statistics: 
+Geography: 1978-2019;Business Dynamics Statistics: Initial Establishment
+ Size: 1978-2019;Business Dynamics Statistics: Initial Firm Size: 
+1978-2019;Business Dynamics Statistics: Metro: 1978-2019;Business 
+Dynamics Statistics: NAICS: 1978-2019</td><td>not required</td><td><a href="https://api.census.gov/data/timeseries/bds/variables/JOB_DESTRUCTION_F.html">JOB_DESTRUCTION_F</a></td><td>0</td><td>int</td><td><a href="https://api.census.gov/data/timeseries/bds/groups/BDSIFSIZE.html">BDSIFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSGEO.html">BDSGEO</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGEFSIZE.html">BDSFAGEFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGEIESIZE.html">BDSEAGEIESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFSIZE.html">BDSFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGEIFSIZE.html">BDSFAGEIFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSIESIZE.html">BDSIESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSNAICS.html">BDSNAICS</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGE.html">BDSEAGE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGEESIZE.html">BDSEAGEESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGE.html">BDSFAGE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSMETRO.html">BDSMETRO</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSESIZE.html">BDSESIZE</a></td>
+</tr>
+<tr>
+<td><a href="https://api.census.gov/data/timeseries/bds/variables/JOB_DESTRUCTION_CONTINUERS.json" name="JOB_DESTRUCTION_CONTINUERS">JOB_DESTRUCTION_CONTINUERS</a></td><td>Number of jobs lost from contracting establishments during the last 12 months</td><td>Business
+ Dynamics Statistics: Establishment Age: 1978-2019;Business Dynamics 
+Statistics: Establishment Age by Establishment Size: 1978-2019;Business 
+Dynamics Statistics: Establishment Age by Initial Establishment Size: 
+1978-2019;Business Dynamics Statistics: Establishment Size: 
+1978-2019;Business Dynamics Statistics: Firm Age: 1978-2019;Business 
+Dynamics Statistics: Firm Age by Firm Size: 1978-2019;Business Dynamics 
+Statistics: Firm Age by Initial Firm Size: 1978-2019;Business Dynamics 
+Statistics: Firm Size: 1978-2019;Business Dynamics Statistics: 
+Geography: 1978-2019;Business Dynamics Statistics: Initial Establishment
+ Size: 1978-2019;Business Dynamics Statistics: Initial Firm Size: 
+1978-2019;Business Dynamics Statistics: Metro: 1978-2019;Business 
+Dynamics Statistics: NAICS: 1978-2019</td><td>not required</td><td><a href="https://api.census.gov/data/timeseries/bds/variables/JOB_DESTRUCTION_CONTINUERS_F.html">JOB_DESTRUCTION_CONTINUERS_F</a></td><td>0</td><td>int</td><td><a href="https://api.census.gov/data/timeseries/bds/groups/BDSIFSIZE.html">BDSIFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSGEO.html">BDSGEO</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGEFSIZE.html">BDSFAGEFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGEIESIZE.html">BDSEAGEIESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFSIZE.html">BDSFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGEIFSIZE.html">BDSFAGEIFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSIESIZE.html">BDSIESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSNAICS.html">BDSNAICS</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGE.html">BDSEAGE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGEESIZE.html">BDSEAGEESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGE.html">BDSFAGE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSMETRO.html">BDSMETRO</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSESIZE.html">BDSESIZE</a></td>
+</tr>
+<tr>
+<td><a href="https://api.census.gov/data/timeseries/bds/variables/JOB_DESTRUCTION_DEATHS.json" name="JOB_DESTRUCTION_DEATHS">JOB_DESTRUCTION_DEATHS</a></td><td>Number of jobs lost from closing establishments during the last 12 months</td><td>Business
+ Dynamics Statistics: Establishment Age: 1978-2019;Business Dynamics 
+Statistics: Establishment Age by Establishment Size: 1978-2019;Business 
+Dynamics Statistics: Establishment Age by Initial Establishment Size: 
+1978-2019;Business Dynamics Statistics: Establishment Size: 
+1978-2019;Business Dynamics Statistics: Firm Age: 1978-2019;Business 
+Dynamics Statistics: Firm Age by Firm Size: 1978-2019;Business Dynamics 
+Statistics: Firm Age by Initial Firm Size: 1978-2019;Business Dynamics 
+Statistics: Firm Size: 1978-2019;Business Dynamics Statistics: 
+Geography: 1978-2019;Business Dynamics Statistics: Initial Establishment
+ Size: 1978-2019;Business Dynamics Statistics: Initial Firm Size: 
+1978-2019;Business Dynamics Statistics: Metro: 1978-2019;Business 
+Dynamics Statistics: NAICS: 1978-2019</td><td>not required</td><td><a href="https://api.census.gov/data/timeseries/bds/variables/JOB_DESTRUCTION_DEATHS_F.html">JOB_DESTRUCTION_DEATHS_F</a></td><td>0</td><td>int</td><td><a href="https://api.census.gov/data/timeseries/bds/groups/BDSIFSIZE.html">BDSIFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSGEO.html">BDSGEO</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGEFSIZE.html">BDSFAGEFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGEIESIZE.html">BDSEAGEIESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFSIZE.html">BDSFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGEIFSIZE.html">BDSFAGEIFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSIESIZE.html">BDSIESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSNAICS.html">BDSNAICS</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGE.html">BDSEAGE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGEESIZE.html">BDSEAGEESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGE.html">BDSFAGE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSMETRO.html">BDSMETRO</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSESIZE.html">BDSESIZE</a></td>
+</tr>
+<tr>
+<td><a href="https://api.census.gov/data/timeseries/bds/variables/JOB_DESTRUCTION_RATE.json" name="JOB_DESTRUCTION_RATE">JOB_DESTRUCTION_RATE</a></td><td>Rate of jobs lost from contracting and closing establishments during the last 12 months</td><td>Business
+ Dynamics Statistics: Establishment Age: 1978-2019;Business Dynamics 
+Statistics: Establishment Age by Establishment Size: 1978-2019;Business 
+Dynamics Statistics: Establishment Age by Initial Establishment Size: 
+1978-2019;Business Dynamics Statistics: Establishment Size: 
+1978-2019;Business Dynamics Statistics: Firm Age: 1978-2019;Business 
+Dynamics Statistics: Firm Age by Firm Size: 1978-2019;Business Dynamics 
+Statistics: Firm Age by Initial Firm Size: 1978-2019;Business Dynamics 
+Statistics: Firm Size: 1978-2019;Business Dynamics Statistics: 
+Geography: 1978-2019;Business Dynamics Statistics: Initial Establishment
+ Size: 1978-2019;Business Dynamics Statistics: Initial Firm Size: 
+1978-2019;Business Dynamics Statistics: Metro: 1978-2019;Business 
+Dynamics Statistics: NAICS: 1978-2019</td><td>not required</td><td><a href="https://api.census.gov/data/timeseries/bds/variables/JOB_DESTRUCTION_RATE_F.html">JOB_DESTRUCTION_RATE_F</a></td><td>0</td><td>float</td><td><a href="https://api.census.gov/data/timeseries/bds/groups/BDSIFSIZE.html">BDSIFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSGEO.html">BDSGEO</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGEFSIZE.html">BDSFAGEFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGEIESIZE.html">BDSEAGEIESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFSIZE.html">BDSFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGEIFSIZE.html">BDSFAGEIFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSIESIZE.html">BDSIESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSNAICS.html">BDSNAICS</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGE.html">BDSEAGE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGEESIZE.html">BDSEAGEESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGE.html">BDSFAGE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSMETRO.html">BDSMETRO</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSESIZE.html">BDSESIZE</a></td>
+</tr>
+<tr>
+<td><a href="https://api.census.gov/data/timeseries/bds/variables/JOB_DESTRUCTION_RATE_DEATHS.json" name="JOB_DESTRUCTION_RATE_DEATHS">JOB_DESTRUCTION_RATE_DEATHS</a></td><td>Rate of jobs lost from closing establishments during the last 12 months</td><td>Business
+ Dynamics Statistics: Establishment Age: 1978-2019;Business Dynamics 
+Statistics: Establishment Age by Establishment Size: 1978-2019;Business 
+Dynamics Statistics: Establishment Age by Initial Establishment Size: 
+1978-2019;Business Dynamics Statistics: Establishment Size: 
+1978-2019;Business Dynamics Statistics: Firm Age: 1978-2019;Business 
+Dynamics Statistics: Firm Age by Firm Size: 1978-2019;Business Dynamics 
+Statistics: Firm Age by Initial Firm Size: 1978-2019;Business Dynamics 
+Statistics: Firm Size: 1978-2019;Business Dynamics Statistics: 
+Geography: 1978-2019;Business Dynamics Statistics: Initial Establishment
+ Size: 1978-2019;Business Dynamics Statistics: Initial Firm Size: 
+1978-2019;Business Dynamics Statistics: Metro: 1978-2019;Business 
+Dynamics Statistics: NAICS: 1978-2019</td><td>not required</td><td><a href="https://api.census.gov/data/timeseries/bds/variables/JOB_DESTRUCTION_RATE_DEATHS_F.html">JOB_DESTRUCTION_RATE_DEATHS_F</a></td><td>0</td><td>float</td><td><a href="https://api.census.gov/data/timeseries/bds/groups/BDSIFSIZE.html">BDSIFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSGEO.html">BDSGEO</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGEFSIZE.html">BDSFAGEFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGEIESIZE.html">BDSEAGEIESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFSIZE.html">BDSFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGEIFSIZE.html">BDSFAGEIFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSIESIZE.html">BDSIESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSNAICS.html">BDSNAICS</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGE.html">BDSEAGE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGEESIZE.html">BDSEAGEESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGE.html">BDSFAGE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSMETRO.html">BDSMETRO</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSESIZE.html">BDSESIZE</a></td>
+</tr>
+<tr>
+<td><a href="https://api.census.gov/data/timeseries/bds/variables/METRO.json" name="METRO">METRO</a></td><td>Establishments located in Metropolitan or Micropolitan Statistical Area indicator</td><td>Business Dynamics Statistics: Metro: 1978-2019</td><td>not required</td><td><a href="https://api.census.gov/data/timeseries/bds/variables/METRO_LABEL.html">METRO_LABEL</a></td><td>0</td><td>string</td><td><a href="https://api.census.gov/data/timeseries/bds/groups/BDSMETRO.html">BDSMETRO</a></td>
+</tr>
+<tr>
+<td><a href="https://api.census.gov/data/timeseries/bds/variables/NAICS.json" name="NAICS">NAICS</a></td><td>2017 NAICS Code</td><td>Business
+ Dynamics Statistics: Establishment Age: 1978-2019;Business Dynamics 
+Statistics: Establishment Age by Establishment Size: 1978-2019;Business 
+Dynamics Statistics: Establishment Age by Initial Establishment Size: 
+1978-2019;Business Dynamics Statistics: Establishment Size: 
+1978-2019;Business Dynamics Statistics: Firm Age: 1978-2019;Business 
+Dynamics Statistics: Firm Age by Firm Size: 1978-2019;Business Dynamics 
+Statistics: Firm Age by Initial Firm Size: 1978-2019;Business Dynamics 
+Statistics: Firm Size: 1978-2019;Business Dynamics Statistics: 
+Geography: 1978-2019;Business Dynamics Statistics: Initial Establishment
+ Size: 1978-2019;Business Dynamics Statistics: Initial Firm Size: 
+1978-2019;Business Dynamics Statistics: Metro: 1978-2019;Business 
+Dynamics Statistics: NAICS: 1978-2019</td><td>default displayed</td><td><a href="https://api.census.gov/data/timeseries/bds/variables/NAICS_LABEL.html">NAICS_LABEL</a></td><td>0</td><td>string</td><td><a href="https://api.census.gov/data/timeseries/bds/groups/BDSIFSIZE.html">BDSIFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSGEO.html">BDSGEO</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGEFSIZE.html">BDSFAGEFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGEIESIZE.html">BDSEAGEIESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFSIZE.html">BDSFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGEIFSIZE.html">BDSFAGEIFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSIESIZE.html">BDSIESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSNAICS.html">BDSNAICS</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGE.html">BDSEAGE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGEESIZE.html">BDSEAGEESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGE.html">BDSFAGE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSMETRO.html">BDSMETRO</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSESIZE.html">BDSESIZE</a></td>
+</tr>
+<tr>
+<td><a href="https://api.census.gov/data/timeseries/bds/variables/NATION.json" name="NATION">NATION</a></td><td>Geography</td><td></td><td>not required</td><td><a href="https://api.census.gov/data/timeseries/bds/variables/.html"></a></td><td>0</td><td><span class="na">(not a predicate)</span></td><td>
+						N/A
+					</td>
+</tr>
+<tr>
+<td><a href="https://api.census.gov/data/timeseries/bds/variables/NET_JOB_CREATION.json" name="NET_JOB_CREATION">NET_JOB_CREATION</a></td><td>Number of net jobs created from expanding/contracting and opening/closing establishments during the last 12 months</td><td>Business
+ Dynamics Statistics: Establishment Age: 1978-2019;Business Dynamics 
+Statistics: Establishment Age by Establishment Size: 1978-2019;Business 
+Dynamics Statistics: Establishment Age by Initial Establishment Size: 
+1978-2019;Business Dynamics Statistics: Establishment Size: 
+1978-2019;Business Dynamics Statistics: Firm Age: 1978-2019;Business 
+Dynamics Statistics: Firm Age by Firm Size: 1978-2019;Business Dynamics 
+Statistics: Firm Age by Initial Firm Size: 1978-2019;Business Dynamics 
+Statistics: Firm Size: 1978-2019;Business Dynamics Statistics: 
+Geography: 1978-2019;Business Dynamics Statistics: Initial Establishment
+ Size: 1978-2019;Business Dynamics Statistics: Initial Firm Size: 
+1978-2019;Business Dynamics Statistics: Metro: 1978-2019;Business 
+Dynamics Statistics: NAICS: 1978-2019</td><td>not required</td><td><a href="https://api.census.gov/data/timeseries/bds/variables/NET_JOB_CREATION_F.html">NET_JOB_CREATION_F</a></td><td>0</td><td>int</td><td><a href="https://api.census.gov/data/timeseries/bds/groups/BDSIFSIZE.html">BDSIFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSGEO.html">BDSGEO</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGEFSIZE.html">BDSFAGEFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGEIESIZE.html">BDSEAGEIESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFSIZE.html">BDSFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGEIFSIZE.html">BDSFAGEIFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSIESIZE.html">BDSIESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSNAICS.html">BDSNAICS</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGE.html">BDSEAGE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGEESIZE.html">BDSEAGEESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGE.html">BDSFAGE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSMETRO.html">BDSMETRO</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSESIZE.html">BDSESIZE</a></td>
+</tr>
+<tr>
+<td><a href="https://api.census.gov/data/timeseries/bds/variables/NET_JOB_CREATION_RATE.json" name="NET_JOB_CREATION_RATE">NET_JOB_CREATION_RATE</a></td><td>Rate of net jobs created from expanding/contracting and opening/closing establishments during the last 12 months</td><td>Business
+ Dynamics Statistics: Establishment Age: 1978-2019;Business Dynamics 
+Statistics: Establishment Age by Establishment Size: 1978-2019;Business 
+Dynamics Statistics: Establishment Age by Initial Establishment Size: 
+1978-2019;Business Dynamics Statistics: Establishment Size: 
+1978-2019;Business Dynamics Statistics: Firm Age: 1978-2019;Business 
+Dynamics Statistics: Firm Age by Firm Size: 1978-2019;Business Dynamics 
+Statistics: Firm Age by Initial Firm Size: 1978-2019;Business Dynamics 
+Statistics: Firm Size: 1978-2019;Business Dynamics Statistics: 
+Geography: 1978-2019;Business Dynamics Statistics: Initial Establishment
+ Size: 1978-2019;Business Dynamics Statistics: Initial Firm Size: 
+1978-2019;Business Dynamics Statistics: Metro: 1978-2019;Business 
+Dynamics Statistics: NAICS: 1978-2019</td><td>not required</td><td><a href="https://api.census.gov/data/timeseries/bds/variables/NET_JOB_CREATION_RATE_F.html">NET_JOB_CREATION_RATE_F</a></td><td>0</td><td>float</td><td><a href="https://api.census.gov/data/timeseries/bds/groups/BDSIFSIZE.html">BDSIFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSGEO.html">BDSGEO</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGEFSIZE.html">BDSFAGEFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGEIESIZE.html">BDSEAGEIESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFSIZE.html">BDSFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGEIFSIZE.html">BDSFAGEIFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSIESIZE.html">BDSIESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSNAICS.html">BDSNAICS</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGE.html">BDSEAGE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGEESIZE.html">BDSEAGEESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGE.html">BDSFAGE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSMETRO.html">BDSMETRO</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSESIZE.html">BDSESIZE</a></td>
+</tr>
+<tr>
+<td><a href="https://api.census.gov/data/timeseries/bds/variables/REALLOCATION_RATE.json" name="REALLOCATION_RATE">REALLOCATION_RATE</a></td><td>Rate of reallocation during the last 12 months</td><td>Business
+ Dynamics Statistics: Establishment Age: 1978-2019;Business Dynamics 
+Statistics: Establishment Age by Establishment Size: 1978-2019;Business 
+Dynamics Statistics: Establishment Age by Initial Establishment Size: 
+1978-2019;Business Dynamics Statistics: Establishment Size: 
+1978-2019;Business Dynamics Statistics: Firm Age: 1978-2019;Business 
+Dynamics Statistics: Firm Age by Firm Size: 1978-2019;Business Dynamics 
+Statistics: Firm Age by Initial Firm Size: 1978-2019;Business Dynamics 
+Statistics: Firm Size: 1978-2019;Business Dynamics Statistics: 
+Geography: 1978-2019;Business Dynamics Statistics: Initial Establishment
+ Size: 1978-2019;Business Dynamics Statistics: Initial Firm Size: 
+1978-2019;Business Dynamics Statistics: Metro: 1978-2019;Business 
+Dynamics Statistics: NAICS: 1978-2019</td><td>not required</td><td><a href="https://api.census.gov/data/timeseries/bds/variables/REALLOCATION_RATE_F.html">REALLOCATION_RATE_F</a></td><td>0</td><td>float</td><td><a href="https://api.census.gov/data/timeseries/bds/groups/BDSIFSIZE.html">BDSIFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSGEO.html">BDSGEO</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGEFSIZE.html">BDSFAGEFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGEIESIZE.html">BDSEAGEIESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFSIZE.html">BDSFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGEIFSIZE.html">BDSFAGEIFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSIESIZE.html">BDSIESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSNAICS.html">BDSNAICS</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGE.html">BDSEAGE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGEESIZE.html">BDSEAGEESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGE.html">BDSFAGE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSMETRO.html">BDSMETRO</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSESIZE.html">BDSESIZE</a></td>
+</tr>
+<tr>
+<td><a href="https://api.census.gov/data/timeseries/bds/variables/SECTOR.json" name="SECTOR">SECTOR</a></td><td>NAICS economic sector </td><td></td><td>not required</td><td><a href="https://api.census.gov/data/timeseries/bds/variables/.html"></a></td><td>0</td><td>string</td><td>
+						N/A
+					</td>
+</tr>
+<tr>
+<td><a href="https://api.census.gov/data/timeseries/bds/variables/STATE.json" name="STATE">STATE</a></td><td>Geography</td><td></td><td>not required</td><td><a href="https://api.census.gov/data/timeseries/bds/variables/.html"></a></td><td>0</td><td><span class="na">(not a predicate)</span></td><td>
+						N/A
+					</td>
+</tr>
+<tr>
+<td><a href="https://api.census.gov/data/timeseries/bds/variables/SUBSECTOR.json" name="SUBSECTOR">SUBSECTOR</a></td><td>SUBSECTOR</td><td></td><td>not required</td><td><a href="https://api.census.gov/data/timeseries/bds/variables/.html"></a></td><td>0</td><td>string</td><td>
+						N/A
+					</td>
+</tr>
+<tr>
+<td><a href="https://api.census.gov/data/timeseries/bds/variables/SUMLEVEL.json" name="SUMLEVEL">SUMLEVEL</a></td><td>Summary Level code</td><td></td><td>not required</td><td><a href="https://api.census.gov/data/timeseries/bds/variables/.html"></a></td><td>0</td><td>string</td><td>
+						N/A
+					</td>
+</tr>
+<tr>
+<td><a href="https://api.census.gov/data/timeseries/bds/variables/time.json" name="time">time</a></td><td>ISO-8601 Date/Time value</td><td>Census API Date/Time Specification</td><td>required, predicate-only</td><td><a href="https://api.census.gov/data/timeseries/bds/variables/.html"></a></td><td>0</td><td>datetime</td><td>
+						N/A
+					</td>
+</tr>
+<tr>
+<td><a href="https://api.census.gov/data/timeseries/bds/variables/ucgid.json" name="ucgid">ucgid</a></td><td>Uniform Census Geography Identifier clause</td><td>Census API Geography Specification</td><td>predicate-only</td><td><a href="https://api.census.gov/data/timeseries/bds/variables/.html"></a></td><td>0</td><td>ucgid</td><td>
+						N/A
+					</td>
+</tr>
+<tr>
+<td><a href="https://api.census.gov/data/timeseries/bds/variables/YEAR.json" name="YEAR">YEAR</a></td><td>Year</td><td>Business
+ Dynamics Statistics: Establishment Age: 1978-2019;Business Dynamics 
+Statistics: Establishment Age by Establishment Size: 1978-2019;Business 
+Dynamics Statistics: Establishment Age by Initial Establishment Size: 
+1978-2019;Business Dynamics Statistics: Establishment Size: 
+1978-2019;Business Dynamics Statistics: Firm Age: 1978-2019;Business 
+Dynamics Statistics: Firm Age by Firm Size: 1978-2019;Business Dynamics 
+Statistics: Firm Age by Initial Firm Size: 1978-2019;Business Dynamics 
+Statistics: Firm Size: 1978-2019;Business Dynamics Statistics: 
+Geography: 1978-2019;Business Dynamics Statistics: Initial Establishment
+ Size: 1978-2019;Business Dynamics Statistics: Initial Firm Size: 
+1978-2019;Business Dynamics Statistics: Metro: 1978-2019;Business 
+Dynamics Statistics: NAICS: 1978-2019</td><td>default displayed</td><td><a href="https://api.census.gov/data/timeseries/bds/variables/.html"></a></td><td>0</td><td>string</td><td><a href="https://api.census.gov/data/timeseries/bds/groups/BDSIFSIZE.html">BDSIFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSGEO.html">BDSGEO</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGEFSIZE.html">BDSFAGEFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGEIESIZE.html">BDSEAGEIESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFSIZE.html">BDSFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGEIFSIZE.html">BDSFAGEIFSIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSIESIZE.html">BDSIESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSNAICS.html">BDSNAICS</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGE.html">BDSEAGE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSEAGEESIZE.html">BDSEAGEESIZE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSFAGE.html">BDSFAGE</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSMETRO.html">BDSMETRO</a>,
+                <a href="https://api.census.gov/data/timeseries/bds/groups/BDSESIZE.html">BDSESIZE</a></td>
+</tr>
+</tbody>
+</table>
+
+
+</body></html>

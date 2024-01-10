@@ -1,0 +1,173 @@
+---
+title: "ChatGPT Factor Analysis"
+output: html_document
+date: "2024-01-02"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# Load necessary libraries
+library(here)
+library(tidyverse)
+library(readr)
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(cluster)
+library(factoextra)
+
+```
+
+# Notes
+
+## (1-1-24)
+
+Well, I had a pretty amazing session with ChatGPT, where it was showing me how to do time-series factor analysis on my data. It was working on it in Python, and it got stuck (limits on computing power I could use), but at the end, I asked it to translate to R!
+
+As of now, I haven't tried to run the R code, and am probably a bit too tired for it now.
+
+URL for the entire conversation: https://chat.openai.com/share/eb56a9e6-ef9a-4db7-982e-baf6658d0c67
+
+Okay I ran it! But now I need ChatGPT to give me the rest of the steps...
+
+# ChatGPT 1
+
+```{r}
+
+# Load the dataset
+file_path <- here("data/BDS/bds_df.csv")
+bds_data <- read_csv(file_path)
+
+# Prepare the data
+# Focusing on data from 1986 onwards and pivoting
+emp_data_post1985 <- bds_data %>%
+  filter(year >= 1986) %>%
+  select(FIPS_5, year, emp) %>%
+  spread(key = year, value = emp)
+
+# Handling missing data
+# Dropping counties with more than 10% missing data and interpolating for others
+threshold <- 0.1
+emp_data_post1985 <- emp_data_post1985 %>%
+  mutate(missing_data_proportion = rowMeans(is.na(.))) %>%
+  filter(missing_data_proportion <= threshold) %>%
+  select(-missing_data_proportion) %>%
+  zoo::na.approx()
+
+# PCA Analysis
+# Standardizing and applying PCA
+emp_data_scaled <- scale(emp_data_post1985[, -1])  # Excluding FIPS_5 from scaling
+pca_result <- prcomp(emp_data_scaled, center = TRUE, scale. = TRUE)
+
+# K-Means Clustering
+# Determining the number of clusters using the Elbow Method
+fviz_nbclust(emp_data_scaled, kmeans, method = "wss") +
+  geom_vline(xintercept = 4, linetype = 2) +
+  labs(subtitle = "Elbow method")
+
+# Applying K-Means clustering (assuming 4 clusters as an example)
+set.seed(123) # For reproducibility
+kmeans_result <- kmeans(emp_data_scaled, centers = 4, nstart = 25)
+fviz_cluster(kmeans_result, data = emp_data_scaled)
+
+
+```
+
+# Export
+
+```{r eval=FALSE}
+
+write_csv(emp_data_post1985, here("data/AI/emp_data_post1985.csv"))
+
+```
+
+## ChatGPT Notes
+
+"A few notes:
+
+    Replace "path_to_your_csv_file.csv" with the actual path to your CSV file.
+    The na.approx() function from the zoo package can be used for interpolating missing values.
+    The fviz_nbclust and fviz_cluster functions from the factoextra package are used for visualizing the Elbow Method and K-Means clustering results.
+
+This R script mirrors the steps we discussed in Python but adapted to the R environment and tidyverse syntax. Remember to adjust the number of clusters in the K-Means section based on your analysis needs and the Elbow Method results."
+
+# ChatGPT 2
+
+```{r}
+
+# Load necessary libraries
+library(tidyverse)
+library(readr)
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(cluster)
+library(factoextra)
+library(stats)
+
+# Load the dataset
+file_path <- "path_to_your_csv_file.csv" # Update with actual file path
+bds_data <- read_csv(file_path)
+
+# Data Preparation
+# Focus on data from 1986 onwards and pivot
+emp_data_post1985 <- bds_data %>%
+  filter(year >= 1986) %>%
+  select(FIPS_5, year, emp) %>%
+  spread(key = year, value = emp)
+
+# Drop counties with more than 10% missing data
+threshold_missing <- 0.1
+emp_data_filtered <- emp_data_post1985[rowSums(is.na(emp_data_post1985)) / ncol(emp_data_post1985) <= threshold_missing, ]
+
+# Impute missing values for counties with less than 10% missing data
+emp_data_imputed <- emp_data_filtered
+for (i in 1:nrow(emp_data_imputed)) {
+  emp_data_imputed[i, is.na(emp_data_imputed[i, ])] <- mean(emp_data_imputed[i, ], na.rm = TRUE)
+}
+
+# Standardize the data
+emp_scaled <- as.data.frame(scale(emp_data_imputed))
+
+# PCA Analysis
+pca_result <- prcomp(emp_scaled, center = TRUE, scale. = TRUE)
+
+# Determine the number of components explaining 80% variance
+cumulative_variance <- cumsum(pca_result$sdev^2 / sum(pca_result$sdev^2))
+n_components <- which(cumulative_variance >= 0.8)[1]
+
+# K-Means Clustering (using 4 clusters)
+set.seed(123)  # For reproducibility
+kmeans_result <- kmeans(emp_scaled[, 1:n_components], centers = 4, nstart = 25)
+
+# Add cluster assignments to the data
+emp_data_imputed$Cluster <- kmeans_result$cluster
+
+# Log transformation of the employment data for visualization
+emp_data_log <- log1p(emp_data_imputed)  # log1p for log(x + 1) to handle zeros
+emp_data_log$Cluster <- emp_data_imputed$Cluster
+
+# Convert to long format for plotting
+emp_data_long <- gather(emp_data_log, "Year", "Log_Employment", -Cluster)
+
+# Calculate average log employment for each cluster
+average_log_emp_by_cluster <- emp_data_long %>%
+  group_by(Year, Cluster) %>%
+  summarize(Avg_Log_Emp = mean(Log_Employment, na.rm = TRUE))
+
+# Plotting
+ggplot(average_log_emp_by_cluster, aes(x = Year, y = Avg_Log_Emp, color = as.factor(Cluster))) +
+  geom_line() +
+  labs(title = "Average Log Employment per Cluster Over Years",
+       x = "Year", y = "Average Log Employment",
+       color = "Cluster") +
+  theme_minimal()
+
+
+```
+
+## ChatGPT Notes
+
+Make sure to update "path_to_your_csv_file.csv" with the actual path to your CSV file. This R script follows the steps we've taken in Python, adapted to the R environment using tidyverse conventions. The final plot displays the average logarithmic employment for each cluster over the years, mirroring the Python analysis.
+

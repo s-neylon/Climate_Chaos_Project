@@ -1,0 +1,187 @@
+---
+title: "NWS Flooding Clean"
+output: html_document
+date: "2023-12-28"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(here)
+library(tidyverse)
+library(stringr)
+
+```
+
+# Notes
+##(12-28-23)
+
+NOTE: There is hinky stuff with the geo join (columns with the same names, etc), so clean that up if you end up using that file for anything but Tableau.
+
+# NWS Events Data
+
+```{r}
+
+nws_detail_22 <- read_csv(here("data/storm_events/test/StormEvents_details-ftp_v1.0_d2022_c20231017.csv"))
+
+```
+
+## State FIPS
+
+```{r}
+
+state_fips <- read_csv(here("data/Labels/state_fips.csv")) %>% 
+  mutate(fips_num = as.numeric(FIPS))
+
+```
+
+```{r}
+
+nws_detail_22 <- left_join(nws_detail_22, state_fips, join_by(STATE_FIPS == fips_num))
+
+```
+
+## County Only
+
+```{r}
+
+nws_counties <- nws_detail_22 %>% filter(CZ_TYPE == "C")
+
+```
+
+
+## Full FIPS
+
+```{r}
+
+nws_counties <- nws_counties %>% mutate(
+  full_FIPS = case_when(
+    str_length(CZ_FIPS) == 3  ~ as.character(CZ_FIPS),
+    str_length(CZ_FIPS) == 2  ~ str_c("0", as.character(CZ_FIPS)),
+    str_length(CZ_FIPS) == 1  ~ str_c("00", as.character(CZ_FIPS))
+  ),
+  FIPS_5 = str_c(FIPS, full_FIPS)
+)
+
+```
+
+## Just Floods
+
+```{r}
+
+nws_flood <- nws_counties %>% filter(EVENT_TYPE == "Flood" | EVENT_TYPE == "Flash Flood")
+
+```
+
+## Convert Damage to Number
+
+```{r}
+
+nws_flood <- nws_flood %>% 
+  mutate(
+    PROP_DMG = case_when(
+      is.na(DAMAGE_PROPERTY) ~ NA_real_,
+      str_detect(DAMAGE_PROPERTY, "K") ~ parse_number(DAMAGE_PROPERTY) * 1000,
+      str_detect(DAMAGE_PROPERTY, "M") ~ parse_number(DAMAGE_PROPERTY) * 1000000,
+      TRUE ~ NA_real_
+    )
+  ) %>% 
+  relocate(PROP_DMG, .before = DAMAGE_PROPERTY)
+  
+
+```
+
+# Drop Raw Data
+
+```{r eval=FALSE}
+
+rm(nws_detail_22, nws_counties)
+
+```
+
+
+
+# Tableau Version
+
+```{r eval=FALSE}
+
+write_csv(nws_counties, here(""))
+
+```
+
+
+# Data Exploration
+
+```{r section-setup}
+knitr::opts_chunk$set(eval = FALSE)
+
+```
+
+Note: This will not stop the chunks from running when I use "Run All", but I thought I would keep it here, in case I end up knitting the document for some reason?
+
+## Explore
+
+```{r eval=FALSE}
+
+nws_flood %>% group_by(EVENT_TYPE) %>% count()
+
+```
+
+```{r eval=FALSE}
+
+nws_detail_22 %>% group_by(EVENT_TYPE) %>% count()
+
+```
+
+
+```{r eval=FALSE}
+
+
+
+```
+
+
+## End Section
+
+```{r end-section}
+knitr::opts_chunk$set(eval = TRUE)
+
+```
+
+# Geo Data 
+
+Add County names to data, so I can get them in Tableau
+
+```{r}
+
+fips_df <- read_csv(here("data/Labels/FIPS_all_counties.csv"))
+
+```
+
+
+```{r}
+
+geo_nws_flood <- left_join(nws_flood, fips_df, join_by(FIPS_5 == FIPS_text))
+
+```
+
+
+## Tableau Geo Version
+
+```{r eval=FALSE}
+
+write_csv(geo_nws_flood, here("data/storm_events/test/flood_22_geo.csv"))
+
+```
+
+
+
+# County Sums
+
+```{r eval=FALSE}
+
+county_flood <- nws_flood %>% group_by(FIPS_5) %>% 
+  summarise(prop_dmg = sum(PROP_DMG, na.rm = TRUE))
+
+```
+

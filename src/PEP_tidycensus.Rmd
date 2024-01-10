@@ -1,0 +1,115 @@
+---
+title: "TidyCensus Pop Estimates"
+output: html_document
+date: "2024-01-01"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(here)
+library(tidyverse)
+library(tidycensus)
+library(purrr)
+
+```
+
+# Notes
+
+## (1-1-24)
+
+With the help of ChatGPT, you created really good code to get population data! Unfortunately, after spending a bunch of time on it, you saw that API data only goes back to 2015 lol
+
+# Tidycensus Setup
+
+```{r}
+
+census_api_key("28a80c926bbc32370a6533b0b377f6d42e40b95b")
+
+```
+
+# Import PEP
+
+```{r eval=FALSE}
+
+years <- 2019:2022 # Specify the years
+
+# Get data
+data_list <- map(years, safely(~ get_estimates(
+  geography = "county", 
+  product = "population", 
+  year = .x
+)))
+
+# Extract and add the year column
+df_list <- map2(data_list, years, ~ mutate(.x$result, year = .y))
+
+# Reorder columns, filter for specific variables, and combine data frames
+final_data <- map_dfr(df_list, ~ .x %>%
+                                  select(NAME, GEOID, variable, value, year) %>%
+                                  filter(variable %in% c("POP", "POPESTIMATE")))
+
+
+
+
+```
+
+## Function
+
+```{r}
+
+get_population_data <- function(start_year, end_year) {
+  map_dfr(start_year:end_year, ~ get_estimates(
+    geography = "county", 
+    product = "population", 
+    year = .x
+  ) %>% 
+    mutate(year = .x) %>%
+    select(NAME, GEOID, variable, value, year) %>%
+    filter(variable %in% c("POP", "POPESTIMATE")) %>%
+    separate(NAME, into = c("County_Title", "State"), sep = ", ")
+  )
+}
+
+
+```
+
+```{r}
+
+final_data <- get_population_data(1996, 2022)
+
+```
+
+
+
+```{r eval=FALSE}
+
+# NOTE: This is nice code from ChatGPT, using "pluck" to get just the results from the list, not the "errors" - however, I don't actually need it, but I wanted to save it here.
+
+final_data <- map_dfr(df_list, pluck, "result")
+
+```
+
+```{r eval=FALSE}
+
+data_list[[1]]$error
+
+```
+
+```{r eval=FALSE}
+
+View(data_list[[1]]$result)
+
+```
+
+```{r eval=FALSE}
+
+unique(final_data$variable)
+
+```
+
+```{r eval=FALSE}
+
+str(df_list)
+
+```

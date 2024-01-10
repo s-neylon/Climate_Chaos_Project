@@ -1,0 +1,107 @@
+---
+title: "County Biz Patterns Download"
+output: html_document
+date: "2024-01-01"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(here)
+library(tidyverse)
+library(httr)
+
+```
+
+
+# Notes
+
+##(1-1-24)
+
+Using the magic of ChatGPT to write me a script to download the CBP!
+
+
+# Download County Business Patterns
+
+```{r}
+
+# Base URL for the data
+base_url <- "https://www2.census.gov/programs-surveys/cbp/datasets/"
+
+# Function to generate file URL for a given year
+generate_file_url <- function(year) {
+  year_suffix <- str_sub(as.character(year), 3, 4)
+  file_name <- str_c("cbp", year_suffix, "co.zip")
+  full_url <- str_c(base_url, year, "/", file_name)
+  
+  return(full_url)
+}
+
+# Set the directory where files should be downloaded
+# Replace this with your desired path
+download_directory <- here("data/CBP/download_directory")
+
+# Create the directory if it does not exist
+if (!dir.exists(download_directory)) {
+  dir.create(download_directory, recursive = TRUE)
+}
+
+# Function to download a file for a given year
+download_file_for_year <- function(year) {
+  file_url <- generate_file_url(year)
+  destination_file <- file.path(download_directory, str_c("cbp", year, "co.zip"))
+
+  if (http_error(file_url)) {
+    message("File not found for year: ", year)
+    return(invisible(NULL))
+  }
+
+  download.file(file_url, destfile = destination_file, mode = "wb")
+  message("Downloaded file for year: ", year)
+}
+
+# Years range
+years <- 1986:2021
+
+# Apply the function to each year
+walk(years, download_file_for_year)
+
+
+```
+
+# Unzipping the Files
+
+```{r}
+
+# Set the directory where your files are downloaded
+# download_directory <- "/path/to/your/directory"
+
+# Set the directory where you want to extract the files
+# You can use the same download directory or specify a different one
+extract_directory <- here("data/CBP")
+
+# Create the extract directory if it does not exist
+if (!dir.exists(extract_directory)) {
+  dir.create(extract_directory, recursive = TRUE)
+}
+
+# Get list of downloaded zip files
+zip_files <- list.files(path = download_directory, pattern = "\\.zip$", full.names = TRUE)
+
+# Function to unzip a file
+unzip_file <- function(file_path) {
+  tryCatch({
+    unzip(file_path, exdir = extract_directory)
+    message("Unzipped file: ", file_path)
+  }, error = function(e) {
+    message("Error unzipping file: ", file_path, " Error: ", e$message)
+  })
+}
+
+# Apply the function to each zip file
+walk(zip_files, unzip_file)
+
+
+```
+
+

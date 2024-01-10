@@ -1,0 +1,276 @@
+---
+title: "NWS Flood Data Loop Build"
+output: html_document
+date: "2023-12-28"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(here)
+library(tidyverse)
+library(stringr)
+library(fs)
+
+```
+
+# Notes
+##(12-28-2023)
+
+This is a building and testing document. I am working on a loop which will clean and load flood data from the NWS.
+
+NOTE: Flooding definitions change a lot over the years! BUT, I am in coding mode, so I should finish this, only with a limited number of years.
+  NEW PLAN: Create a version of the function which just gets a count of all the different events by year! This will allow you to code things up, and avoid having to find older versions of the documentation.
+  * I did it! Now on to the final form:
+
+TO DO:
+
+1. I need to create code to get a list of the files I want to import
+  - Only certain years
+  - Only "detail" files
+2. I need to take these files one at a time, clean them
+3. Merge them
+  - This is sort of easy - there is a map function.
+  
+It works!!!
+
+## Data Cleaning Notes
+
+53059 - Skamania County, WA - seems to be missing
+
+Also, there are parsing errors from read_csv, which you should sort through.
+
+Tableau Note: A LOT of the damage is in the "Null" category! This could be an issue with the geo join (which is fine), or the underlying data (which is not)
+
+## Dmg per Capita
+
+Would be nice to get population, so you can get damage per capita? What is the easiest way?
+
+# Function Work
+
+## Get File List
+
+For certain years - (you didn't do this with the QCEW data)
+For 'details' files
+
+```{r}
+
+# Define the function
+get_filepaths <- function(base_path, start_year, end_year) {
+  
+  # Define the path to your files
+  nws_path <- here(base_path)
+
+  # Define the range of years
+  nws_years <- start_year:end_year
+
+  # Create a regex pattern to match filenames with the specified years
+  year_pattern <- paste(nws_years, collapse = "|")
+  filename_pattern <- str_glue("StormEvents_details-ftp_v1\\.0_d({year_pattern}).*\\.csv$")
+  
+  # List and filter files based on the pattern
+  nws_files <- dir_ls(path = nws_path, regexp = filename_pattern)
+
+  # Modify filenames
+  modified_filenames <- lapply(nws_files, function(filename) {
+    # Extract the last part of the filename (after the last '/')
+    last_part <- basename(filename)
+
+    # Duplicate and append this part to the original filename
+    str_c(filename, "/", last_part)
+  })
+
+  return(modified_filenames)
+}
+
+```
+
+```{r}
+
+nws_files <- get_filepaths('data/storm_events/11-5', start_year = 1996, end_year = 2023)
+
+```
+
+
+
+## Clean and Count Function
+
+```{r eval=FALSE}
+
+event_count <- function(file_name){
+  read.csv(file_name) %>% 
+    filter(CZ_TYPE == "C") %>% 
+    group_by(EVENT_TYPE) %>%
+    summarise(
+      count = n(),
+      year = min(YEAR)
+    )
+}
+
+```
+
+### Testing
+
+```{r eval=FALSE}
+
+test_df <-  read.csv(here("data/storm_events/11-5/StormEvents_details-ftp_v1.0_d2020_c20230927.csv/StormEvents_details-ftp_v1.0_d2020_c20230927.csv")) %>% 
+    filter(CZ_TYPE == "C") %>% 
+    group_by(EVENT_TYPE) %>%
+    summarise(
+      count = n(),
+      year = min(YEAR)
+    )
+
+```
+
+# Flood Clean Function
+
+## State FIPS
+
+```{r}
+
+state_fips <- read_csv(here("data/Labels/state_fips.csv")) %>% 
+  mutate(fips_num = as.numeric(FIPS))
+
+```
+
+## Function
+
+```{r eval=FALSE}
+
+flood_clean <- function(file_name){
+  flood_df <- read.csv(file_name) %>% 
+    filter(CZ_TYPE == "C")
+
+## Join with State Data
+
+nws_detail <- left_join(nws_detail, state_fips, join_by(STATE_FIPS == fips_num))
+
+## Just Counties
+
+nws_counties <- nws_detail %>% filter(CZ_TYPE == "C")
+
+## Full FIPS
+
+nws_counties <- nws_counties %>% mutate(
+  full_FIPS = case_when(
+    str_length(CZ_FIPS) == 3  ~ as.character(CZ_FIPS),
+    str_length(CZ_FIPS) == 2  ~ str_c("0", as.character(CZ_FIPS)),
+    str_length(CZ_FIPS) == 1  ~ str_c("00", as.character(CZ_FIPS))
+  ),
+  FIPS_5 = str_c(FIPS, full_FIPS)
+)
+
+## Just Floods
+
+nws_flood <- nws_counties %>% filter(EVENT_TYPE == "Flood" | EVENT_TYPE == "Flash Flood")
+
+## Convert Damage to Number
+
+nws_flood <- nws_flood %>% 
+  mutate(
+    PROP_DMG = case_when(
+      is.na(DAMAGE_PROPERTY) ~ NA_real_,
+      str_detect(DAMAGE_PROPERTY, "K") ~ parse_number(DAMAGE_PROPERTY) * 1000,
+      str_detect(DAMAGE_PROPERTY, "M") ~ parse_number(DAMAGE_PROPERTY) * 1000000,
+      TRUE ~ NA_real_
+    )
+  ) %>% 
+  relocate(PROP_DMG, .before = DAMAGE_PROPERTY)
+
+}
+
+```
+
+```{r}
+
+# I used ChatGPT to clean up this code and pipe everything!
+
+# Cleans and processes flood data from a given CSV file.
+# 
+# Args:
+#   file_name: The path to the CSV file containing flood data.
+#   state_fips: Data frame containing state FIPS codes.
+#
+# Returns:
+#   A data frame of summarized property damage per county.
+
+flood_clean <- function(file_name) {
+  read_csv(file_name) %>%
+    filter(CZ_TYPE == "C") %>%
+    left_join(state_fips, by = c("STATE_FIPS" = "fips_num")) %>%
+    mutate(
+      full_FIPS = case_when(
+        str_length(CZ_FIPS) == 3 ~ as.character(CZ_FIPS),
+        str_length(CZ_FIPS) == 2 ~ str_c("0", as.character(CZ_FIPS)),
+        str_length(CZ_FIPS) == 1 ~ str_c("00", as.character(CZ_FIPS))
+      ),
+      FIPS_5 = str_c(FIPS, full_FIPS)
+    ) %>%
+    filter(EVENT_TYPE %in% c("Flood", "Flash Flood")) %>%
+    mutate(
+      PROP_DMG = case_when(
+        is.na(DAMAGE_PROPERTY) ~ NA_real_,
+        str_detect(DAMAGE_PROPERTY, "K") ~ parse_number(DAMAGE_PROPERTY) * 1000,
+        str_detect(DAMAGE_PROPERTY, "M") ~ parse_number(DAMAGE_PROPERTY) * 1000000,
+        TRUE ~ NA_real_
+      )
+    ) %>%
+    relocate(PROP_DMG, .before = DAMAGE_PROPERTY) %>%
+    
+    # Group by FIPS_5 code and summarise total property damage
+    group_by(FIPS_5) %>%
+    summarise(
+      prop_dmg = sum(PROP_DMG, na.rm = TRUE),
+      year = min(YEAR))
+}
+
+# Example usage:
+# result <- flood_clean("path/to/file.csv", state_fips_data_frame)
+
+
+```
+
+
+## Map Flood
+
+```{r}
+
+flood_df <- map_dfr(nws_files, flood_clean)
+
+```
+
+
+
+# Tableau Version
+
+```{r eval=FALSE}
+
+write_csv(flood_df, here("data/storm_events/test/flood_dmg_96-23.csv"))
+
+```
+
+# Geo Data 
+
+Add County names to data, so I can get them in Tableau
+
+```{r}
+
+fips_df <- read_csv(here("data/Labels/FIPS_all_counties.csv"))
+
+```
+
+
+```{r}
+
+geo_flood_df <- left_join(flood_df, fips_df, join_by(FIPS_5 == FIPS_text))
+
+```
+
+## Tableau Geo Version
+
+```{r eval=FALSE}
+
+write_csv(geo_flood_df, here("data/storm_events/test/geo_flood_dmg_96-23.csv"))
+
+```

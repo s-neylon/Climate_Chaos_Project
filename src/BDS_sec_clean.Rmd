@@ -1,0 +1,451 @@
+---
+title: "BDS Data Import & Clean"
+output: html_document
+date: "2023-09-22"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(here)
+library(tidyverse)
+library(stringr)
+library(skimr)
+
+set.seed(7008)
+
+```
+
+# Notes
+
+## (1-4-24)
+
+Decided to get the BDS data on industries!
+
+NOTE: This is updated data, from 2021 - you should probably also download the smaller county dataset and update your other analyses.
+
+### Missing Rates
+
+Rates that couldn't be calculated were marked with "N". I wanted to change these to zeroes, but ChatGPT was cautious, and I want to remember what it said, so that I carefully document my decision:
+
+GPT:
+
+If the underlying data is zero because there is no activity (e.g., no job creation or destruction because there are no firms or establishments), then it might not be appropriate to impute the rate as zero. A zero rate typically suggests no change or growth, which is different from a rate that can't be calculated because the concept doesn't apply (e.g., you can't calculate a growth rate if there are no firms to grow).
+
+However, if the context of your analysis allows for interpreting a non-calculable rate as effectively zero growth (because there's nothing to grow from), then it could be reasonable to impute these rates as zero. This would be the case if, for example, you're examining the impact of a variable on growth rates and you consider that no firms or establishments is equivalent to no opportunity for growth, thus a zero growth rate.
+
+Here's a conceptual framework to decide on this:
+
+    Interpretation of Zero Rate: If in your context, no firms/establishments (and thus no employment) logically equates to a zero rate of change (since there is nothing to change), then setting rates to zero would align with your analytical framework.
+    Consistency: Ensure that this treatment is consistently applied across all such instances in your dataset.
+    Documentation: Clearly document this decision in your methodology, explaining the rationale and any potential implications for the analysis.
+    Sensitivity Analysis: Where possible, conduct sensitivity analyses to check how this treatment of the data affects your results. This might involve running the analysis with and without these zero-imputed rates.
+
+If you choose to proceed with marking the non-calculable rates as zero, we will update the dataset accordingly and then continue with the planned analysis steps. Would you like to go ahead with this?
+
+### Excluding an Industry
+
+According to ChatGPT, it's better to exclude an industry which is unimportant (in contrast to dummy variables, where there reference category is important).
+
+I have chosen to exclude Agriculture, Forestry, Fishing and Hunting (NAICS 11). In fact, damage to crops etc. is not included in my dataset - another reason to leave it out!
+
+# Import
+
+```{r}
+
+# Define the column types for specific columns if known
+# Assuming 'FIPS_5', 'sector', 'st', 'cty' should be read as characters and other columns as numeric, which will automatically convert "D" and "N" to NA
+
+column_types <- cols(
+  .default = col_double(),
+  sector = col_character(),
+  st = col_character(),
+  cty = col_character(),
+)
+
+# Load the dataset with specific data types and handling of "D" and "N" as NAs
+bds_sec_df <- read_csv(here("data/BDS/bds2021_st_cty_sec.csv"), 
+                            col_types = column_types,
+                            na = c("D", "N"))
+
+# Replace NAs in numeric variables with 0
+bds_sec_df <- bds_sec_df %>%
+  mutate(across(firms:firmdeath_emp, ~replace_na(., 0)))
+
+```
+
+# Sample - ChatGPT
+
+Taking a smaller sample of the data, so ChatGPT can help me clean and modify it.
+
+```{r eval=FALSE}
+
+# Set up smaller dataset, filter years, create FIPS_5 County ID
+smpl_bds_sec_df <- bds_sec_df %>%
+  filter(year >= 1986) %>% 
+  mutate(FIPS_5 = str_c(st, cty)) %>% 
+  # Remove Alaska, Hawaii, and Territories
+  filter(!(st %in% c("02", "15")) & st < 56)
+
+# Sample 10% of the unique counties
+sampled_counties <- smpl_bds_sec_df %>%
+  distinct(FIPS_5) %>%
+  slice_sample(prop = 0.10) %>%
+  pull(FIPS_5)
+
+# Filter your dataset to include only the data from the sampled counties.
+smpl_bds_sec_df <- smpl_bds_sec_df%>%
+  filter(FIPS_5 %in% sampled_counties)
+
+# Sample m industries per county
+m_industries <- 4  # Adjust as needed
+
+smpl_bds_sec_df <- smpl_bds_sec_df %>%
+  group_by(FIPS_5) %>%
+  slice_sample(n = m_industries)
+
+print(dim(smpl_bds_sec_df))
+head(smpl_bds_sec_df)
+
+
+```
+
+## Export Sample
+
+```{r eval=FALSE}
+
+write_csv(smpl_bds_sec_df, here("data/BDS/smpl_bds_sec_df.csv"))
+
+```
+
+# Clean
+
+```{r}
+
+# Filter years, create FIPS_5 County ID
+bds_sec_df <- bds_sec_df %>%
+  filter(year >= 1986) %>% 
+  mutate(FIPS_5 = str_c(st, cty),
+         sector = str_replace(sector, "-", "_")) %>% 
+  # Remove Alaska, Hawaii, and Territories
+  filter(!(st %in% c("02", "15")) & st < 56)
+
+
+
+```
+
+## Export Full
+
+```{r eval=FALSE}
+
+write_csv(bds_sec_df, here("data/BDS/bds_sec_df.csv"))
+
+```
+
+# Reshape Path 1
+
+Path 1: Create a panel where each row is a county-year, but there are a series of variables which have the proportions of employment that fall into each industry in that county (leaving one industry out, to reduce multi collinearity). I would use these variables as controls in my model, to make sure that I am comparing counties which are similar to each other. Of course, I would not use these variables after treatment begins, as use of post-treatment variables is bad in causal inference. Instead, I would either just use the controls in a baseline year, or use controls for the years before any county is treated (1986-1996), in the synthetic control model I have been running.
+
+ChatGPT Code:
+
+```{r eval=FALSE}
+
+# Assuming bds_sec_df is your original dataset
+
+# Step 1: Aggregate Total Employment by County-Year
+total_emp_by_county_year <- bds_sec_df %>%
+  group_by(FIPS_5, year) %>%
+  summarise(total_emp = sum(emp, na.rm = TRUE))
+
+# Step 2: Calculate Proportion of Employment by Industry
+bds_sec_df <- bds_sec_df %>%
+  left_join(total_emp_by_county_year, by = c("FIPS_5", "year")) %>%
+  mutate(emp_proportion = round(emp / total_emp, digits = 4))
+
+# Step 3: Exclude One Industry to Avoid Multicollinearity
+
+# Excluding the first industry for simplicity
+#industry_to_exclude <- first(unique(bds_sec_df$sector))
+
+# Excluding 
+industry_to_exclude <- "11"
+bds_sec_df_wide <- filter(bds_sec_df, sector != industry_to_exclude)
+
+# Step 4: Reshape Data for County-Year Panel
+bds_sec_df_wide <- bds_sec_df_wide %>%
+  select(FIPS_5, year, sector, emp_proportion) %>%
+  pivot_wider(names_from = sector, 
+              names_prefix = "i_", 
+              values_from = emp_proportion, 
+              values_fill = list(emp_proportion = 0)) %>%
+  arrange(FIPS_5, year)
+
+# View the first few rows of the transformed dataset
+head(bds_sec_df_wide)
+
+```
+
+## Export Wide
+
+```{r eval=FALSE}
+
+write_csv(bds_sec_df_wide, here("data/BDS/wide_bds_sec_df.csv"))
+
+```
+
+# Reshape Path 2
+
+Path 2: I would create a panel, where each row is an industry sector within a county within a year. This means the outcome in my difference in difference model would be the employment of an industry in a county, rather than total employment in the county.
+
+ChatGPT Code:
+```{r eval=FALSE}
+
+# Assuming bds_data_sample is your original dataset
+
+# For Path 2, we focus on county, year, sector, and employment
+bds_data_path2 <- bds_data_sample %>%
+  select(FIPS_5, year, sector, emp) %>%
+  arrange(FIPS_5, year, sector)
+
+# View the first few rows of the transformed dataset
+head(bds_data_path2)
+
+```
+
+# Export
+
+```{r eval=FALSE}
+
+write_csv(bds_df, here("data/BDS/bds_df.csv"))
+
+```
+
+# Data Exploration
+
+```{r eval=FALSE}
+
+summary(bds_df)
+
+```
+
+```{r eval=FALSE}
+
+glimpse(bds_df)
+
+```
+
+```{r eval=FALSE}
+
+county_count <- unique(bds_df$FIPS_5)
+
+```
+
+```{r eval=FALSE}
+
+bds_sec_df %>% skim()
+
+```
+
+```{r eval=FALSE}
+
+bds_sec_df_wide %>% skim()
+
+```
+
+# Old Code
+
+## No sectors code
+
+```{r eval=FALSE}
+
+# NOTE: I am keeping this, with all the numeric columns read in as col_character(), because if I have to re-do it, it was very tedious to change all these to character!
+
+bds_df <- read_csv(here("data/BDS/bds2020_st_cty.csv"),
+                   na = "(D)",
+                   col_types = cols(
+  year = col_double(),
+  st = col_character(),
+  cty = col_character(),
+  firms = col_double(),
+  estabs = col_double(),
+  emp = col_double(),
+  denom = col_double(),
+  estabs_entry = col_double(),
+  estabs_entry_rate = col_double(),
+  estabs_exit = col_double(),
+  estabs_exit_rate = col_double(),
+  job_creation = col_double(),
+  job_creation_births = col_double(),
+  job_creation_continuers = col_double(),
+  job_creation_rate_births = col_double(),
+  job_creation_rate = col_double(),
+  job_destruction = col_double(),
+  job_destruction_deaths = col_double(),
+  job_destruction_continuers = col_double(),
+  job_destruction_rate_deaths = col_double(),
+  job_destruction_rate = col_double(),
+  net_job_creation = col_double(),
+  net_job_creation_rate = col_double(),
+  reallocation_rate = col_double(),
+  firmdeath_firms = col_double(),
+  firmdeath_estabs = col_double(),
+  firmdeath_emp = col_double()
+)
+                   )
+
+```
+
+```{r eval=FALSE}
+
+# NOTE: I am keeping this, with all the numeric columns read in as col_character(), because if I have to re-do it, it was very tedious to change all these to character!
+
+bds_df <- read_csv(here("data/BDS/bds2020_st_cty.csv"),
+                   na = "(D)",
+                   col_types = cols(
+  year = col_double(),
+  st = col_character(),
+  cty = col_character(),
+  firms = col_character(),
+  estabs = col_character(),
+  emp = col_character(),
+  denom = col_character(),
+  estabs_entry = col_character(),
+  estabs_entry_rate = col_character(),
+  estabs_exit = col_character(),
+  estabs_exit_rate = col_character(),
+  job_creation = col_character(),
+  job_creation_births = col_character(),
+  job_creation_continuers = col_character(),
+  job_creation_rate_births = col_character(),
+  job_creation_rate = col_character(),
+  job_destruction = col_character(),
+  job_destruction_deaths = col_character(),
+  job_destruction_continuers = col_character(),
+  job_destruction_rate_deaths = col_character(),
+  job_destruction_rate = col_character(),
+  net_job_creation = col_character(),
+  net_job_creation_rate = col_character(),
+  reallocation_rate = col_character(),
+  firmdeath_firms = col_character(),
+  firmdeath_estabs = col_character(),
+  firmdeath_emp = col_character()
+)
+                   )
+
+```
+
+# Old Import Drafts
+
+## Final Code
+
+```{r eval=FALSE}
+
+# Define the column types for specific columns if known
+# Assuming the 'FIPS_5' and 'sector' should be read as characters
+# and other columns as numeric, which will automatically convert "D" and "N" to NA
+column_types <- cols(
+  .default = col_double(),
+  FIPS_5 = col_character(),
+  sector = col_character(),
+  st = col_character(),
+  cty = col_character(),
+)
+
+# Load the dataset with specific data types and handling of "D" and "N" as NAs
+bds_sec_df <- read_csv(here("data/BDS/bds2021_st_cty_sec.csv"), 
+                            col_types = column_types,
+                            na = c("D", "N"))
+
+# Replace NAs in numeric variables with 0
+bds_sec_df <- bds_sec_df %>%
+  mutate(across(firms:firmdeath_emp, ~replace_na(., 0)))
+
+```
+
+
+## GPT 1
+
+```{r eval=FALSE}
+
+# Replace "D" and "N" values with 0
+bds_data_sample <- bds_data_sample %>%
+  mutate(across(everything(), ~na_if(., "D"))) %>%
+  mutate(across(everything(), ~na_if(., "N"))) %>%
+  replace_na(list(
+    estabs_entry_rate = 0,
+    estabs_exit_rate = 0,
+    job_creation_rate_births = 0,
+    job_creation_rate = 0,
+    job_destruction_rate_deaths = 0,
+    job_destruction_rate = 0,
+    net_job_creation_rate = 0,
+    reallocation_rate = 0
+  ))
+
+# Convert data types
+bds_data_sample <- bds_data_sample %>%
+  mutate(across(contains("FIPS") | contains("sector"), as.character)) %>%
+  mutate(across(where(is.character), as.numeric))
+
+
+```
+
+## GPT 2
+
+```{r eval=FALSE}
+
+# Define the column types for specific columns if known
+# Assuming the 'FIPS_5' and 'sector' should be read as characters
+# and other columns as numeric, which will automatically convert "D" and "N" to NA
+column_types <- cols(
+  .default = col_double(),
+  FIPS_5 = col_character(),
+  sector = col_character(),
+  st = col_character(),
+  cty = col_character(),
+)
+
+# Load the dataset with specific data types and handling of "D" and "N" as NAs
+bds_data_sample <- read_csv('path_to_your_data.csv', 
+                            col_types = column_types,
+                            na = c("D", "N"))
+
+# Replace NAs in rate variables with 0
+bds_data_sample <- bds_data_sample %>%
+  replace_na(list(
+    estabs_entry_rate = 0,
+    estabs_exit_rate = 0,
+    job_creation_rate_births = 0,
+    job_creation_rate = 0,
+    job_destruction_rate_deaths = 0,
+    job_destruction_rate = 0,
+    net_job_creation_rate = 0,
+    reallocation_rate = 0
+  ))
+
+
+```
+
+## Clean Exploration
+
+Done by ChatGPT:
+
+```{r eval=FALSE}
+
+# Unique values in the 'sector' column for consistency in hyphenation
+unique_sectors <- unique(bds_data_sample$sector)
+
+# Frequency check for combined sectors
+frequency_combined_sectors <- count(bds_data_sample, sector)
+
+# Consistency check across years for combined sectors
+consistency_years_combined <- bds_data_sample %>%
+  group_by(year) %>%
+  summarize(unique_sectors = list(unique(sector)))
+
+# Check for the presence of non-hyphenated versions of the hyphenated sectors
+non_hyphenated_sectors <- c('48', '49', '44', '45', '31', '33')
+non_hyphenated_present <- any(non_hyphenated_sectors %in% unique_sectors)
+
+
+```
