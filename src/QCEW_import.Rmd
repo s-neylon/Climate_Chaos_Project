@@ -1,0 +1,84 @@
+---
+title: "QCEW Import"
+author: "Sam Neylon"
+date: '2024-04-02'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(here)
+library(future)
+library(furrr)
+library(tidyverse)
+library(fs)
+library(arrow)
+
+```
+
+# Notes
+
+##(4-1-2024)
+
+Another got dang ChatGPT special - this time with parquet, and parallel processing!
+
+# Import
+
+## Set Parallel
+
+```{r}
+
+# Specify the number of cores you want to use
+plan(multisession, workers = 4) # Adjust the number of workers as appropriate for your machine
+
+```
+
+## Functions
+
+```{r}
+
+list_csv_files <- function(path) {
+  dir_ls(path, regexp = "\\.csv$", recurse = TRUE)
+}
+
+# Function to process a single file, as before
+process_and_save <- function(file_path) {
+  # Adjusted to write to the appropriate year directory under intermediate_path
+  target_dir <- str_replace(dirname(file_path), data_path, intermediate_path)
+  dir_create(target_dir) # Ensure target directory exists
+  
+  parquet_file <- str_replace(basename(file_path), "\\.csv$", ".parquet")
+  parquet_path <- file.path(target_dir, parquet_file)
+  
+  read_csv(file_path, col_types = cols(industry_code = col_character())) %>%
+    filter(agglvl_code == 74) %>%
+    write_parquet(parquet_path)
+}
+
+```
+
+## Run
+
+```{r}
+
+# Set File Path
+data_path <- "D:/QCEW/by_area"
+intermediate_path <- "D:/QCEW/intermediate_parquet"
+
+```
+
+
+```{r}
+
+# List all CSV files and process them in parallel
+csv_files <- list_csv_files(data_path)
+future_walk(csv_files, process_and_save)
+
+```
+
+# Alternative Year Chunk Method
+
+This method loads all the files for a single year at once, which could speed things up, if you think your memory can handle it!
+
+[It's on ChatGPT]

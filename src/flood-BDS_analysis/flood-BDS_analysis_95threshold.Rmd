@@ -705,7 +705,7 @@ est_ex_1 <- att_gt(yname="estabs_exit_rate",
                   tname="year",
                   idname="FIPS",
                   gname="group",
-                  data=estXr_flood_df,
+                  data=emp_flood_df,
                   control_group = "notyettreated")
 
 ```
@@ -731,6 +731,43 @@ est_ex_1 <- att_gt(yname="estabs_exit_rate",
 ```{r eval=FALSE}
 
   summary(est_ex_1_overall)
+
+```
+
+## realloc_rate
+
+```{r eval=FALSE}
+
+realloc_1 <- att_gt(yname="reallocation_rate",
+                  tname="year",
+                  idname="FIPS",
+                  gname="group",
+                  data=emp_flood_df,
+                  control_group = "notyettreated")
+
+```
+
+```{r eval=FALSE}
+
+  realloc_1_es <- aggte(realloc_1, type="dynamic")
+
+```
+
+```{r eval=FALSE}
+
+  ggdid(realloc_1_es, xgap = 5)
+
+```
+
+```{r eval=FALSE}
+
+  realloc_1_overall <- aggte(realloc_1, type="group")
+
+```
+
+```{r eval=FALSE}
+
+  summary(realloc_1_overall)
 
 ```
 

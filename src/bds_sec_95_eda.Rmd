@@ -1,0 +1,61 @@
+---
+title: "Untitled"
+output: html_document
+date: "2024-01-14"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(here)
+library(tidyverse)
+library(stringr)
+library(skimr)
+
+set.seed(7008)
+
+```
+
+# Sector Proportions
+
+```{r}
+
+wide_bds_sec <- read_csv(here("data/BDS/wide_bds_sec_df.csv"))
+
+```
+```{r}
+
+wide_95 <- wide_bds_sec %>% filter(year == 1995)
+
+```
+
+# Emp
+
+```{r}
+
+bds_df <- read_csv(here("data/BDS/bds_df.csv"))
+
+```
+
+```{r}
+
+emp_95 <- bds_df %>% select(year, emp, FIPS_5) %>% filter(year == 1995)
+
+```
+
+# Join
+
+```{r}
+
+join_df <- left_join(wide_95, emp_95, join_by(year, FIPS_5))
+
+```
+
+# Export
+
+```{r eval=FALSE}
+
+write_csv(join_df, here("data/BDS/bds_sec_95_eda.csv"))
+
+```
+
