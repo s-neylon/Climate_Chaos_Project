@@ -1,0 +1,263 @@
+---
+title: "Hurr SHELDUS Analysis"
+author: "Sam Neylon"
+date: '2024-04-04'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(here)
+library(tidyverse)
+library(stringr)
+
+set.seed(7008)
+
+```
+
+
+# Notes
+
+##(4-3-24)
+
+Taking a lot of the code from "flood-BDS_analysis_95threshold.Rmd"
+
+
+# Load Data
+
+```{r}
+
+hurr_df <- read_csv(here("data/SHELDUS/hs_BDS_hurr_SHELDUS.csv"),
+                    col_types = cols(
+  year = col_double(),
+  st = col_character(),
+  cty = col_character(),
+  firms = col_double(),
+  estabs = col_double(),
+  emp = col_double(),
+  denom = col_double(),
+  estabs_entry = col_double(),
+  estabs_entry_rate = col_double(),
+  estabs_exit = col_double(),
+  estabs_exit_rate = col_double(),
+  job_creation = col_double(),
+  job_creation_births = col_double(),
+  job_creation_continuers = col_double(),
+  job_creation_rate_births = col_double(),
+  job_creation_rate = col_double(),
+  job_destruction = col_double(),
+  job_destruction_deaths = col_double(),
+  job_destruction_continuers = col_double(),
+  job_destruction_rate_deaths = col_double(),
+  job_destruction_rate = col_double(),
+  net_job_creation = col_double(),
+  net_job_creation_rate = col_double(),
+  reallocation_rate = col_double(),
+  firmdeath_firms = col_double(),
+  firmdeath_estabs = col_double(),
+  firmdeath_emp = col_double(),
+  FIPS_5 = col_character(),
+  PropertyDmg = col_double(),
+  PropertyDmg_Adj2022 = col_double(),
+  PropertyDmgPerCapita_Adj2022 = col_double(),
+  SHELDUS = col_double(),
+  pre_96 = col_double(),
+  serious_hurr = col_double(),
+  treatment = col_double(),
+  first_hurr_year = col_double(),
+  group = col_double(),
+  State = col_character(),
+  Postal = col_character(),
+  hurr_state = col_double()
+))
+
+```
+
+# Prep
+
+## Variables
+
+```{r}
+
+hurr_df <- hurr_df %>%
+  mutate(
+    FIPS = as.numeric(FIPS_5)
+  )
+
+```
+
+# Drop Houston!
+
+Don't forget to put them back in!!! But I want to see what happens if I drop Harris County.
+
+```{r}
+
+hurr_noHOUST <- hurr_df %>% 
+  filter(FIPS_5 != 48201)
+
+```
+
+
+# Analysis
+
+From Causal Mixtape - Frontiers of DiD
+
+```{r eval=FALSE}
+
+library(did)
+
+```
+
+## Emp Model 1
+
+```{r eval=FALSE}
+
+emp_1 <- att_gt(yname="emp",
+                  tname="year",
+                  idname="FIPS",
+                  gname="group",
+                  data=hurr_df,
+                  control_group = "notyettreated")
+
+```
+
+```{r eval=FALSE}
+
+  emp_1_es <- aggte(emp_1, type="dynamic")
+
+```
+
+```{r eval=FALSE}
+
+  ggdid(emp_1_es, xgap = 5)
+
+```
+
+```{r eval=FALSE}
+
+  emp_1_es10 <- aggte(emp_1, type="dynamic", min_e = -10, max_e = 10)
+
+```
+
+```{r eval=FALSE}
+
+  ggdid(emp_1_es10, xgap = 2)
+
+```
+
+```{r eval=FALSE}
+
+  emp_1_overall <- aggte(emp_1, type="group")
+
+```
+
+```{r eval=FALSE}
+
+  summary(emp_1_overall)
+
+```
+
+## Log Emp Model No Houston
+
+```{r eval=FALSE}
+
+ln_emp_2 <- att_gt(yname="ln_emp",
+                  tname="year",
+                  idname="FIPS",
+                  gname="group",
+                  data=hurr_noHOUST,
+                  control_group = "notyettreated")
+
+```
+
+```{r eval=FALSE}
+
+  ln_emp_2_es <- aggte(ln_emp_2, type="dynamic")
+
+```
+
+```{r eval=FALSE}
+
+  ggdid(ln_emp_2_es, xgap = 4)
+
+```
+
+```{r eval=FALSE}
+
+  ln_emp_2_es10 <- aggte(ln_emp_2, type="dynamic", min_e = -10, max_e = 10)
+
+```
+
+```{r eval=FALSE}
+
+  ggdid(ln_emp_2_es10, xgap = 2)
+
+```
+
+```{r eval=FALSE}
+
+  ln_emp_2_overall <- aggte(ln_emp_2, type="group")
+  summary(ln_emp_2_overall)
+
+```
+
+## Log Emp Model 1
+
+```{r eval=FALSE}
+
+ln_emp_2 <- att_gt(yname="ln_emp",
+                  tname="year",
+                  idname="FIPS",
+                  gname="group",
+                  data=hurr_df,
+                  control_group = "notyettreated")
+
+```
+
+```{r eval=FALSE}
+
+  ln_emp_2_es <- aggte(ln_emp_2, type="dynamic")
+
+```
+
+```{r eval=FALSE}
+
+  ggdid(ln_emp_2_es, xgap = 4)
+
+```
+
+```{r eval=FALSE}
+
+  ln_emp_2_es10 <- aggte(ln_emp_2, type="dynamic", min_e = -10, max_e = 10)
+
+```
+
+```{r eval=FALSE}
+
+  ggdid(ln_emp_2_es10, xgap = 2)
+
+```
+
+```{r eval=FALSE}
+
+  ln_emp_2_overall <- aggte(ln_emp_2, type="group")
+  summary(ln_emp_2_overall)
+
+```
+
+
+# EDA
+
+## 2001?
+
+It's Houston TX
+
+```{r eval=FALSE}
+
+hurr_2001_df <- hurr_df %>% 
+  filter(group == 2001)
+
+```
+
+

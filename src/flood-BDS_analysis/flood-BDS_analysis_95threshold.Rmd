@@ -83,6 +83,18 @@ flood_df <- read_csv(here("data/merge/flood-BDS_data.csv"),
 
 ```
 
+## DROP 2020
+
+Drop the COVID year!
+
+```{r}
+
+flood_df <- flood_df %>% 
+  filter(year < 2020)
+
+```
+
+
 # Flooding Threshold
 
 I want to take a data-driven approach to determining what counts as a serious flood.
@@ -366,9 +378,6 @@ flood_df <- flood_df %>%
   ) %>%
   ungroup()
 
-
-
-
 ```
 
 ## Check
@@ -578,19 +587,51 @@ I wanted to capture ChatGPT's attempt at a TWFE, even if I don't use it
 
 library(plm)
 
-# Preparing the data for the regression
-flood_BDS_p <- pdata.frame(flood_BDS_sorted, index = c("FIPS_5", "year"))
+```
 
-# Creating the treatment variable: 1 if post-treatment period and 0 otherwise
-flood_BDS_p$treatment <- as.integer(flood_BDS_p$year >= flood_BDS_p$group & flood_BDS_p$group > 0)
+```{r eval=FALSE}
+
+p_flood_BDS <- emp_flood_df %>% 
+  mutate(
+    treatment = ifelse(year >= group & group > 0, 1, 0)
+  )
+
+# Preparing the data for the regression
+flood_BDS_p <- pdata.frame(emp_flood_df, index = c("FIPS_5", "year"))
+
+
+```
+
+```{r eval=FALSE}
 
 # Running the two-way fixed effects regression
 # Employment as dependent variable, treatment as independent variable, controlling for county and year fixed effects
-model <- plm(emp ~ treatment, data = flood_BDS_p, model = "within", effect = "twoways")
+model.lnemp.1 <- plm(ln_emp ~ treatment, data = flood_BDS_p, model = "within", effect = "twoways")
 
 # Displaying the results
-summary(model)
+summary(model.lnemp.1)
 
+```
+
+## Data Check
+
+```{r eval=FALSE}
+
+# Group the data by FIPS code
+grouped_data <- p_flood_BDS %>%
+  filter(group > 0) %>% # Filter for treated counties
+  group_by(FIPS_5)
+
+# Get a list of unique FIPS codes
+unique_fips <- unique(p_flood_BDS$FIPS_5)
+
+# Sample a number of unique FIPS codes (e.g., 5 FIPS codes)
+sampled_fips <- sample(unique_fips, 20)
+
+# Filter the original grouped data to only include the sampled FIPS codes
+smpl_p_data <- grouped_data %>%
+  filter(FIPS_5 %in% sampled_fips) %>%
+  ungroup() # Optionally ungroup the data frame
 
 ```
 
@@ -653,7 +694,7 @@ emp_1 <- att_gt(yname="emp",
 
 ```
 
-## Log Emp Model 1
+## *Log Emp Model 1
 
 ```{r eval=FALSE}
 
@@ -694,6 +735,13 @@ ln_emp_1 <- att_gt(yname="ln_emp",
 
   ln_emp_1_overall <- aggte(ln_emp_1, type="group")
   summary(ln_emp_1_overall)
+
+```
+
+```{r eval=FALSE}
+
+  ln_emp_1_simple <- aggte(ln_emp_1, type="simple")
+  summary(ln_emp_1_simple)
 
 ```
 
@@ -768,6 +816,167 @@ realloc_1 <- att_gt(yname="reallocation_rate",
 ```{r eval=FALSE}
 
   summary(realloc_1_overall)
+
+```
+
+# ifect
+
+## 'fect' load
+
+```{r eval=FALSE}
+
+# NOTE! I am not going to install the development version right now, because I don't want to mess with RTools
+
+library(devtools)
+
+# Check if the package is already installed
+if (!requireNamespace("fect", quietly = TRUE)) {
+ # Install the package if it's not installed
+ devtools::install_github('xuyiqing/fect')
+} else {
+ # Package is already installed, so skip installation
+ message("Package 'fect' is already installed.")
+}
+
+# Check if the package is already installed
+if (!requireNamespace("panelView", quietly = TRUE)) {
+ # Install the package if it's not installed
+ devtools::install_github('xuyiqing/panelView')
+} else {
+ # Package is already installed, so skip installation
+ message("Package 'panelView' is already installed.")
+}
+
+```
+
+```{r eval=FALSE}
+
+library(fect)
+library(panelView)
+
+```
+
+## emp Model
+
+```{r eval=FALSE}
+
+emp_1 <- fect(emp ~ treatment, 
+                data = emp_flood_df, 
+                index = c("FIPS","year"),
+                # force: include both unit and time effects
+                force = "two-way",
+                # Interactive Fixed Effects
+                method = "ife", 
+                # Cross-validation to pick number of factors
+                CV = TRUE, 
+                # Test between 0 and 5 factors
+                r = c(0, 5), 
+                se = TRUE, 
+                nboots = 200, 
+                parallel = TRUE,
+                cores = 4) # 4 for LMIS GC Computer
+
+```
+
+### Summary
+
+```{r eval=FALSE}
+
+print(emp_1)
+
+```
+
+### Plot
+
+```{r eval=FALSE}
+
+plot(emp_1, main = "Estimated ATT (IFEct)")
+
+```
+
+## *ln_emp Model
+
+```{r eval=FALSE}
+
+ln_emp_1 <- fect(ln_emp ~ treatment, 
+                data = emp_flood_df, 
+                index = c("FIPS","year"),
+                # force: include both unit and time effects
+                force = "two-way",
+                # Interactive Fixed Effects
+                method = "ife", 
+                # Cross-validation to pick number of factors
+                CV = TRUE, 
+                # Test between 0 and 5 factors
+                r = c(0, 5), 
+                se = TRUE, 
+                nboots = 200, 
+                parallel = TRUE,
+                cores = 4) # 4 for LMIS GC Computer
+
+```
+
+```{r eval=FALSE}
+
+print(ln_emp_1)
+
+```
+
+### Plot
+
+```{r eval=FALSE}
+
+plot(ln_emp_1, main = "Estimated ATT (IFEct)")
+
+```
+
+### HTE (Heterogenous Treatment Effects)
+
+```{r eval=FALSE}
+
+plot(ln_emp_1, type = "box", xlim = c(-10, 10), main = "ATT - HTE Box Plot")
+
+```
+
+### Calendar Time
+
+```{r eval=FALSE}
+
+plot(ln_emp_1, type = "calendar")
+
+```
+
+# fixest
+
+```{r eval=FALSE}
+
+library(fixest)
+
+```
+
+```{r eval=FALSE}
+
+feols_ln_emp <- feols(ln_emp ~ i(year, treatment, ref = "group") | FIPS + year, emp_flood_df)
+
+```
+
+```{r eval=FALSE}
+
+iplot(feols_ln_emp)
+
+```
+
+```{r eval=FALSE}
+
+summary(feols_ln_emp)
+
+```
+
+# Data Exploration
+
+```{r eval=FALSE}
+
+flood_df %>% group_by(st) %>% count(st)
 
 ```
 

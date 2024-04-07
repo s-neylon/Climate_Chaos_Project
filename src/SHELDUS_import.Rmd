@@ -25,6 +25,15 @@ Importing SHELDUS data. A lot of missing data and other analysis still to go thr
 
 I used ChatGPT to analyze just the hurricane damage data, and it seemed clean and nothing missing!
 
+##(4-3-24)
+
+### Dropping 80th percentile for median
+Okay, so, I have been doing analysis. I am not getting significant results with 80th percentile of damage, unless I drop Houston TX! While I don't want to data dredge, I do think it is legitimate to drop my serious threshold, to get more data. In fact, this should include more counties which didn't have an employment effect!
+
+I am doing the median instead.
+
+- Update: Median made it worse! So, I'm not data dredging haha. But Houston really is an outlier, I need to figure out how to deal with it.
+
 
 
 
@@ -146,7 +155,7 @@ load_bds_df <- function(filepath) {
   firmdeath_emp = col_double(),
   FIPS_5 = col_character()
   )) %>%
-    filter(year >= 1986)
+    filter(year >= 1986 & year <= 2019)
 }
 
 # Function to join datasets and filter based on State FIPS codes
@@ -200,7 +209,7 @@ Setting the hurricane damage threshold at 80th percentile for now (based on some
 
 serious_threshold <- hurrSHELDUS_bds_df %>%
   filter(SHELDUS == 1) %>%  # Filter rows where SHELDUS == 1
-  summarise(quantile_80 = quantile(PropertyDmgPerCapita_Adj2022, 0.8, na.rm = TRUE)) %>%
+  summarise(quantile_80 = quantile(PropertyDmgPerCapita_Adj2022, 0.5, na.rm = TRUE)) %>%
   pull(quantile_80)  # Extract the quantile value
 
 # Check the calculated threshold
@@ -239,6 +248,18 @@ hurrSHELDUS_bds_df <- hurrSHELDUS_bds_df %>%
 ```
 
 # Other Data Management
+
+## Log Employment
+
+```{r}
+
+hurrSHELDUS_bds_df <- hurrSHELDUS_bds_df %>% 
+  mutate(
+    ln_emp = log(emp + 1)
+  )
+
+```
+
 
 ## hurr_state variable
 
