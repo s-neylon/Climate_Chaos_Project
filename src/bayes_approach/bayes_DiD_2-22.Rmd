@@ -1,0 +1,569 @@
+---
+title: "Bayesian DiD Learning"
+author: "Sam Neylon"
+date: "2025-02-22"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(here)
+library(tidyverse)
+library(stringr)
+library(scales)
+library(brms)
+
+set.seed(7008)
+
+options(mc.cores = (parallel::detectCores() - 8))
+
+```
+
+# Notes
+
+##(2-22-25)
+
+NOTE! For variable definitions, see code from my Causal Final here, because it was clean and nice to have it all in one place.
+
+I am using this project to learn more about using Bayesian hierarchical modeling.
+
+This was suggested as part of ChatGPT chats:
+https://chatgpt.com/c/67b8f723-2560-800f-95ab-9a081e5b32b6
+https://chatgpt.com/c/67ba47d7-6c88-800f-9fe1-9d9e023abc7a
+
+### PP checks
+
+I am having issues with convergence - I may have set my county random effects to wide - exp(1), so I am changing to exp(2).
+
+Also, I didn't set a warmup, so it's now at 2000, and iter is at 4000.
+
+Okay, doing a student-t seemed like way too much trouble! I switched back to a normal for county in PP 4, and I am making that the final version for Model 1.
+
+# Import
+
+```{r }
+
+# Import ln_emp_flood_df
+
+ln_emp_flood_df <- read_csv(here("data/SHELDUS/ln_emp_flood_df.csv"),
+                     col_types = cols(
+  year = col_double(),
+  st = col_character(),
+  cty = col_character(),
+  firms = col_double(),
+  estabs = col_double(),
+  emp = col_double(),
+  denom = col_double(),
+  estabs_entry = col_double(),
+  estabs_entry_rate = col_double(),
+  estabs_exit = col_double(),
+  estabs_exit_rate = col_double(),
+  job_creation = col_double(),
+  job_creation_births = col_double(),
+  job_creation_continuers = col_double(),
+  job_creation_rate_births = col_double(),
+  job_creation_rate = col_double(),
+  job_destruction = col_double(),
+  job_destruction_deaths = col_double(),
+  job_destruction_continuers = col_double(),
+  job_destruction_rate_deaths = col_double(),
+  job_destruction_rate = col_double(),
+  net_job_creation = col_double(),
+  net_job_creation_rate = col_double(),
+  reallocation_rate = col_double(),
+  firmdeath_firms = col_double(),
+  firmdeath_estabs = col_double(),
+  firmdeath_emp = col_double(),
+  FIPS_5 = col_character(),
+  PropertyDmg = col_double(),
+  PropertyDmg_Adj2022 = col_double(),
+  PropertyDmgPerCapita_Adj2022 = col_double(),
+  SHELDUS = col_double(),
+  pre_96 = col_double(),
+  serious_flood = col_double(),
+  treatment = col_double(),
+  first_hurr_year = col_double(),
+  group = col_double(),
+  ln_emp = col_double(),
+  time_to_treat = col_double(),
+  treat = col_double(),
+  FIPS = col_double(),
+  treatment_post = col_double()
+))
+
+```
+
+# Distributions
+
+## Exponential
+
+I am using this code to better understand exponential distributions.
+
+### Between-county Changes
+
+```{r eval=FALSE}
+
+by_county <- ln_emp_flood_df %>%
+  group_by(FIPS_5) %>%
+  summarize(
+    # 1) Average log employment for each county
+    mean_ln_emp = mean(ln_emp, na.rm = TRUE),
+    # 2) Exponentiate to get approximate mean employment
+    mean_emp = exp(mean_ln_emp)
+  )
+
+# Look at summary stats
+summary(by_county$mean_emp)
+
+```
+
+```{r eval=FALSE}
+
+# For instance, check the ratio of the largest to smallest county
+max_county <- by_county$mean_emp[which.max(by_county$mean_emp)]
+min_county <- by_county$mean_emp[which.min(by_county$mean_emp)]
+ratio_max_to_min <- max_county / min_county
+
+max_county
+min_county
+ratio_max_to_min 
+
+```
+
+```{r eval=FALSE}
+
+county_qs <- quantile(by_county$mean_emp, probs = c(0.05, 0.25, 0.50, 0.75, 0.95))
+county_qs
+
+```
+```{r eval=FALSE}
+
+q75_q25_ratio <- county_qs["75%"] / county_qs["25%"]
+q50_q25_ratio <- county_qs["50%"] / county_qs["25%"]
+q95_q5_ratio <- county_qs["95%"] / county_qs["5%"]
+
+q_table <- tibble(
+  q = c("75/25", "50/25", "95/5"),
+  value = c(q75_q25_ratio, q50_q25_ratio, q95_q5_ratio)
+)
+q_table <- q_table %>% 
+  mutate(sigmas = log(value))
+
+print(q_table)
+
+```
+
+```{r eval=FALSE}
+
+sd_log_emp_counties <- sd(by_county$mean_ln_emp)
+sd_log_emp_counties
+exp(sd_log_emp_counties)
+
+```
+
+```{r eval=FALSE}
+
+# Log-scale quantiles (your data)
+log_quantiles <- c(p25 = 7.62, p50 = 8.70, p75 = 9.81, p95 = 11.90, max = 15.24)
+
+# Convert to employment scale
+employment_quantiles <- exp(log_quantiles)
+employment_quantiles
+
+```
+
+### Between-year changes
+
+```{r eval=FALSE}
+
+# 1) Create a summary dataset: average ln_emp per year,
+#    as well as SD, min, max, etc. 
+year_summary <- ln_emp_flood_df %>%
+  group_by(year) %>%
+  summarize(
+    mean_ln_emp = mean(ln_emp, na.rm = TRUE),
+    sd_ln_emp   = sd(ln_emp, na.rm = TRUE),
+    min_ln_emp  = min(ln_emp, na.rm = TRUE),
+    max_ln_emp  = max(ln_emp, na.rm = TRUE),
+    P25 = round(quantile(ln_emp, 0.25, na.rm = TRUE), 2),
+    P50 = round(quantile(ln_emp, 0.50, na.rm = TRUE), 2),
+    P75 = round(quantile(ln_emp, 0.75, na.rm = TRUE), 2),
+    P95 = round(quantile(ln_emp, 0.95, na.rm = TRUE), 2),
+    .groups = "drop"
+  )
+
+# Peek at the summary
+year_summary
+
+```
+
+```{r eval=FALSE}
+
+year_summary <- year_summary %>%
+  arrange(year) %>%  # ensure the rows are in ascending year order
+  mutate(
+    yoy_change = mean_ln_emp - lag(mean_ln_emp)
+  )
+
+year_summary
+
+
+```
+
+```{r eval=FALSE}
+
+summary(year_summary$yoy_change)
+sd(year_summary$yoy_change, na.rm = TRUE)
+quantile(year_summary$yoy_change, na.rm = TRUE)
+
+```
+
+```{r eval=FALSE}
+
+ggplot(year_summary, aes(x = year, y = mean_ln_emp)) +
+  geom_point() +
+  geom_line(group = 1) +
+  labs(
+    title = "Average Log Employment by Year",
+    x     = "Year",
+    y     = "Mean of Log(Emp)"
+  ) +
+  theme_minimal()
+
+
+```
+
+```{r eval=FALSE}
+
+ggplot(year_summary, aes(x = year, y = yoy_change)) +
+  geom_point() +
+  geom_line(group = 1) +
+  labs(
+    title = "YoY Change in Mean Log Emp",
+    x     = "Year",
+    y     = "YoY Delta Mean Ln Emp"
+  ) +
+  theme_minimal()
+
+
+```
+
+```{r eval=FALSE}
+
+ln_emp_flood_df <- ln_emp_flood_df %>%
+  arrange(FIPS_5, year) %>%
+  group_by(FIPS_5) %>%
+  mutate(yoy_diff_within_county = ln_emp - lag(ln_emp)) %>%
+  ungroup()
+
+# Now summarize typical yoy difference *within counties*
+summary(ln_emp_flood_df$yoy_diff_within_county)
+
+
+
+```
+
+```{r eval=FALSE}
+
+year_summary_withinCounty <- ln_emp_flood_df %>%
+  group_by(year) %>%
+  summarize(
+    mean = mean(yoy_diff_within_county, na.rm = TRUE),
+    sd  = sd(yoy_diff_within_county, na.rm = TRUE),
+    min  = min(yoy_diff_within_county, na.rm = TRUE),
+    max  = max(yoy_diff_within_county, na.rm = TRUE),
+    P25 = round(quantile(yoy_diff_within_county, 0.25, na.rm = TRUE), 2),
+    P50 = round(quantile(yoy_diff_within_county, 0.50, na.rm = TRUE), 2),
+    P75 = round(quantile(yoy_diff_within_county, 0.75, na.rm = TRUE), 2),
+    P95 = round(quantile(yoy_diff_within_county, 0.95, na.rm = TRUE), 2),
+    .groups = "drop"
+  )
+
+```
+
+```{r eval=FALSE}
+
+year_summary_withinCounty
+
+```
+
+```{r eval=FALSE}
+
+summary(year_summary_withinCounty$sd)
+
+```
+
+```{r eval=FALSE}
+
+ggplot(year_summary_withinCounty, aes(x = year, y = mean)) +
+  geom_point() +
+  geom_line(group = 1) +
+  labs(
+    title = "YoY Change - County Mean Ln_emp",
+    x     = "Year",
+    y     = "YoY Delta Mean Ln Emp"
+  ) +
+  theme_minimal()
+
+```
+
+```{r eval=FALSE}
+
+ggplot(year_summary_withinCounty, aes(x = year)) +
+  geom_line(aes(y = mean, color = "Mean"), linewidth = 1) +   # Mean line
+  #geom_line(aes(y = max, color = "Max"), linetype = "dashed") +  # Max
+  #geom_line(aes(y = min, color = "Min"), linetype = "dashed") +  # Min
+  geom_line(aes(y = P25, color = "25th Percentile"), linetype = "dotdash") +  # 25th Percentile
+  geom_line(aes(y = P75, color = "75th Percentile"), linetype = "dotdash") +  # 75th Percentile
+  geom_line(aes(y = P95, color = "95th Percentile"), linetype = "dotdash") +  # 95th Percentile
+  labs(
+    title = "YoY Change in Mean Log Emp",
+    x     = "Year",
+    y     = "YoY Delta Mean Ln Emp",
+    color = "Legend"
+  ) +
+  theme_minimal()
+
+
+```
+
+# brms Model
+
+## Model 1 Priors
+
+### PP 2
+
+```{r eval=FALSE}
+
+model1_priors_2 <- c(
+  prior(normal(8, 2), class = "Intercept"),
+  prior(normal(0, 0.2), class = "b", coef = "treatment_post"),
+  # County-level robust random effect
+  prior_string("exponential(2)", class = "sd", group = "FIPS_5"), 
+  # Year-level normal random effect
+  prior_string("exponential(5)", class = "sd", group = "year"),    
+  # Residual error
+  prior_string("exponential(2)", class = "sigma")                  
+)
+
+```
+
+### PP 3
+
+```{r eval=FALSE}
+
+model1_priors_3 <- c(
+  prior(normal(8, 2), class = "Intercept"),
+  prior(normal(0, 0.2), class = "b", coef = "treatment_post"),
+  # County-level robust random effect
+  prior_string("exponential(0.5)", class = "sd", group = "FIPS_5"), 
+  # Year-level normal random effect
+  prior_string("exponential(5)", class = "sd", group = "year"),    
+  # Residual error
+  prior_string("exponential(2)", class = "sigma")                  
+)
+
+```
+
+### PP 4
+
+```{r eval=FALSE}
+
+model1_priors_4 <- c(
+  prior(normal(8, 2), class = "Intercept"),
+  prior(normal(0, 0.2), class = "b", coef = "treatment_post"),
+  # County-level robust random effect
+  prior_string("exponential(0.5)", class = "sd", group = "FIPS_5"), 
+  # Year-level normal random effect
+  prior_string("exponential(5)", class = "sd", group = "year"),    
+  # Residual error
+  prior_string("exponential(2)", class = "sigma")                  
+)
+
+```
+
+### Model 1 Final
+
+Using PP 4
+
+```{r eval=FALSE}
+
+model1_priors <- c(
+  prior(normal(8, 2), class = "Intercept"),
+  prior(normal(0, 0.2), class = "b", coef = "treatment_post"),
+  # County-level robust random effect
+  prior_string("exponential(0.5)", class = "sd", group = "FIPS_5"), 
+  # Year-level normal random effect
+  prior_string("exponential(5)", class = "sd", group = "year"),    
+  # Residual error
+  prior_string("exponential(2)", class = "sigma")                  
+)
+
+```
+
+## Model 1 - Prior Predictive Check
+
+Try doing this (suggested by ChatGPT) at some point.
+
+Prior Predictive Checks: A good way to see if your priors are reasonable is to do a “prior predictive check.” In brms, you can do something like:
+
+### PP 1
+
+```{r eval=FALSE}
+
+model1_pp_1 <- brm(
+  formula = ln_emp ~ 1 + treatment_post + (1 | FIPS_5) + (1 | year),
+  data = ln_emp_flood_df,
+  family = gaussian(),
+  prior = c(
+    prior(normal(0, 0.2), class = "b"),
+    prior(normal(8, 2), class = "Intercept"),
+    prior(exponential(0.5), class = "sd"),
+    prior(exponential(0.5), class = "sigma")
+  ),
+  sample_prior = "only",
+  chains = 4, iter = 2000, seed = 123
+)
+
+```
+```{r eval=FALSE}
+
+pp_check(fit_prior1)
+
+```
+
+### PP 2
+
+```{r eval=FALSE}
+
+model1_pp_2 <- brm(
+  formula = ln_emp ~ 1 + 
+    treatment_post + 
+    (1|gr(FIPS_5, dist="student")) + 
+    (1|year),
+  data = ln_emp_flood_df,
+  family = gaussian(),
+  prior = model1_priors_2,
+  sample_prior = "only",  # <--- no data likelihood
+  chains = 4, iter = 4000, warmup = 2000,
+)
+
+
+
+```
+
+```{r eval=FALSE}
+
+pp_check(model1_pp_2)
+
+```
+
+```{r eval=FALSE}
+
+pairs(model1_pp_2)
+
+```
+
+This simulates data only from the priors (no data likelihood update) and lets you see how “wild” or “reasonable” the predictions are compared to real-world scales.
+
+### PP 3
+
+```{r eval=FALSE}
+
+model1_pp_3 <- brm(
+  formula = ln_emp ~ 1 + 
+    treatment_post + 
+    (1|gr(FIPS_5, dist="student")) + 
+    (1|year),
+  data = ln_emp_flood_df,
+  family = gaussian(),
+  prior = model1_priors_3,
+  sample_prior = "only",  # <--- no data likelihood
+  chains = 4, iter = 4000, warmup = 2000,
+)
+
+
+
+```
+
+```{r eval=FALSE}
+
+pp_check(model1_pp_3)
+
+```
+
+```{r eval=FALSE}
+
+pairs(model1_pp_3)
+
+```
+
+### PP 4
+
+```{r eval=FALSE}
+
+model1_pp_4 <- brm(
+  formula = ln_emp ~ 1 + 
+    treatment_post + 
+    (1| FIPS_5) + 
+    (1|year),
+  data = ln_emp_flood_df,
+  family = gaussian(),
+  prior = model1_priors_4,
+  sample_prior = "only",  # <--- no data likelihood
+  chains = 4, iter = 4000, warmup = 2000,
+)
+
+
+
+```
+
+```{r eval=FALSE}
+
+pp_check(model1_pp_4)
+
+```
+
+```{r eval=FALSE}
+
+pairs(model1_pp_4)
+
+```
+
+## Model 1
+
+```{r eval=FALSE}
+
+
+model1_fit <- brm(
+  formula = ln_emp ~ 1 +
+    treatment_post +                      # The interaction term (Treat * Post)
+    (1 | FIPS_5) +                # random intercept by county
+    (1 | year),                      # random intercept by year
+  data = ln_emp_flood_df,
+  family = gaussian(),
+  prior = model1_priors,
+  chains = 4, iter = 4000, warmup = 2000, seed = 7008
+)
+
+```
+
+Output:
+Compiling Stan program...
+Start sampling
+Warning: The largest R-hat is 1.5, indicating chains have not mixed.
+Running the chains for more iterations may help. See
+https://mc-stan.org/misc/warnings.html#r-hatWarning: Bulk Effective Samples Size (ESS) is too low, indicating posterior means and medians may be unreliable.
+Running the chains for more iterations may help. See
+https://mc-stan.org/misc/warnings.html#bulk-essWarning: Tail Effective Samples Size (ESS) is too low, indicating posterior variances and tail quantiles may be unreliable.
+Running the chains for more iterations may help. See
+https://mc-stan.org/misc/warnings.html#tail-ess
+
+### Save Model 1
+
+```{r eval=FALSE}
+
+saveRDS(model1_fit, file = here("src/saved_models/bayes_DiD_test_2-23/model1_fit.rds"))
+
+```

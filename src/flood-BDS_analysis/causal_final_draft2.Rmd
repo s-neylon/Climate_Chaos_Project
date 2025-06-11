@@ -1,0 +1,294 @@
+---
+title: "Causal Inference Final Code"
+author: "Sam Neylon"
+date: '2024-05-11'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(here)
+library(tidyverse)
+library(stringr)
+library(scales)
+
+set.seed(7008)
+
+```
+
+# Import
+
+```{r }
+
+# Import ln_emp_flood_df
+
+ln_emp_flood_df <- read_csv(here("data/SHELDUS/ln_emp_flood_df.csv"),
+                     col_types = cols(
+  year = col_double(),
+  st = col_character(),
+  cty = col_character(),
+  firms = col_double(),
+  estabs = col_double(),
+  emp = col_double(),
+  denom = col_double(),
+  estabs_entry = col_double(),
+  estabs_entry_rate = col_double(),
+  estabs_exit = col_double(),
+  estabs_exit_rate = col_double(),
+  job_creation = col_double(),
+  job_creation_births = col_double(),
+  job_creation_continuers = col_double(),
+  job_creation_rate_births = col_double(),
+  job_creation_rate = col_double(),
+  job_destruction = col_double(),
+  job_destruction_deaths = col_double(),
+  job_destruction_continuers = col_double(),
+  job_destruction_rate_deaths = col_double(),
+  job_destruction_rate = col_double(),
+  net_job_creation = col_double(),
+  net_job_creation_rate = col_double(),
+  reallocation_rate = col_double(),
+  firmdeath_firms = col_double(),
+  firmdeath_estabs = col_double(),
+  firmdeath_emp = col_double(),
+  FIPS_5 = col_character(),
+  PropertyDmg = col_double(),
+  PropertyDmg_Adj2022 = col_double(),
+  PropertyDmgPerCapita_Adj2022 = col_double(),
+  SHELDUS = col_double(),
+  pre_96 = col_double(),
+  serious_flood = col_double(),
+  treatment = col_double(),
+  first_hurr_year = col_double(),
+  group = col_double(),
+  ln_emp = col_double(),
+  time_to_treat = col_double(),
+  treat = col_double(),
+  FIPS = col_double(),
+  treatment_post = col_double()
+))
+
+```
+
+# Variables
+
+[Leave notes here on time to treat etc. even though these are already in the data you imported]
+
+# Descriptives
+
+## Continuous
+
+```{r eval=FALSE}
+
+cont_desc_fn <- function(data, variables) {
+  stats <- data %>%
+    summarise(across(all_of(variables), 
+                     list(N = ~sum(!is.na(.)),
+                          Mean = ~round(mean(., na.rm = TRUE), 2),
+                          SD = ~round(sd(., na.rm = TRUE), 2),
+                          Median = ~round(median(., na.rm = TRUE), 2),
+                          IQR = ~round(IQR(., na.rm = TRUE), 2)),
+                     .names = "{.col}__{.fn}"))
+  
+  stats_long <- stats %>%
+    pivot_longer(cols = everything(), names_to = c("Variable", "Statistic"), 
+                 names_sep = "__") %>%
+    pivot_wider(names_from = Statistic, values_from = value)
+  
+  return(stats_long)
+}
+
+# Example usage
+# Assuming df is your data frame and you have a list of variables you want to summarize
+cont_vars <- c("emp")
+cont_vars_noZero <- c("PropertyDmg_Adj2022", "PropertyDmgPerCapita_Adj2022")
+
+cont_tbl_nZ <- ln_emp_flood_df %>% 
+  filter(PropertyDmg_Adj2022 > 0) %>% 
+  cont_desc_fn(data = ., variables = cont_vars_noZero)
+
+cont_tbl <- cont_desc_fn(ln_emp_flood_df, cont_vars)
+
+cont_tbl_full <- bind_rows(cont_tbl, cont_tbl_nZ)
+
+cont_tbl_full <- cont_tbl_full %>%
+  mutate(across(-c(Variable, N), ~case_when(
+    Variable == "emp" ~ paste0(comma(round(. / 1000, 0)), "k"),
+    Variable == "PropertyDmg_Adj2022" ~ paste0(comma(. / 1000, accuracy = 0.01), "k"),
+    Variable == "PropertyDmgPerCapita_Adj2022" ~ comma(., accuracy = 0.01))
+  ))
+
+```
+
+```{r eval=FALSE}
+
+cont_desc_fn <- function(data, variables) {
+  stats <- data %>%
+    summarise(across(all_of(variables), 
+                    list(N = ~sum(!is.na(.)),
+                          Mean = ~round(mean(., na.rm = TRUE), 2),
+                          P25 = ~round(quantile(., 0.25, na.rm = TRUE), 2),
+                          P50 = ~round(quantile(., 0.50, na.rm = TRUE), 2),
+                          P75 = ~round(quantile(., 0.75, na.rm = TRUE), 2),
+                          P95 = ~round(quantile(., 0.95, na.rm = TRUE), 2),
+                          Max = ~round(max(., na.rm = TRUE), 2)),
+                     .names = "{.col}__{.fn}"))
+  
+  stats_long <- stats %>%
+    pivot_longer(cols = everything(), names_to = c("Variable", "Statistic"), 
+                 names_sep = "__") %>%
+    pivot_wider(names_from = Statistic, values_from = value)
+  
+  return(stats_long)
+}
+
+# Example usage
+# Assuming df is your data frame and you have a list of variables you want to summarize
+cont_vars <- c("emp")
+cont_vars_noZero <- c("PropertyDmg_Adj2022", "PropertyDmgPerCapita_Adj2022")
+
+cont_tbl_nZ <- ln_emp_flood_df %>% 
+  filter(PropertyDmg_Adj2022 > 0) %>% 
+  cont_desc_fn(data = ., variables = cont_vars_noZero)
+
+cont_tbl <- cont_desc_fn(ln_emp_flood_df, cont_vars)
+
+cont_tbl_full <- bind_rows(cont_tbl, cont_tbl_nZ)
+
+cont_tbl_full <- cont_tbl_full %>%
+  mutate(across(-c(Variable, N), ~case_when(
+    Variable == "emp" ~ paste0(comma(. / 1000, accuracy = 0.01), "k"),
+    Variable == "PropertyDmg_Adj2022" ~ paste0("$", comma(. / 1000, accuracy = 0.01), "k"),
+    Variable == "PropertyDmgPerCapita_Adj2022" ~ paste0("$", comma(., accuracy = 0.01)))
+  ))
+
+```
+
+```{r}
+
+# Print the summary table
+print(cont_tbl_full)
+
+```
+
+
+```{r eval=FALSE}
+
+cont_tbl_nZ
+
+```
+# Vanilla OLS
+
+```{r }
+
+ols.ln_emp.model <- lm(ln_emp ~ treatment_post, data = ln_emp_flood_df)
+
+```
+
+```{r }
+
+summary(ols.ln_emp.model)
+
+```
+
+# fixest
+
+```{r }
+
+library(fixest)
+
+```
+
+## Model 1 - Averaged ATT
+
+```{r }
+
+feols_ln_emp.AvgATT <- feols(ln_emp ~ treatment_post | FIPS_5 + year, ln_emp_flood_df, cluster = "FIPS_5")
+
+```
+
+```{r }
+
+summary(feols_ln_emp.AvgATT)
+
+```
+
+## Event Study - Time-varying ATT's
+
+```{r }
+
+feols_ln_emp.Event <- feols(ln_emp ~ i(time_to_treat, treat, ref = c(-1, -1000)) | FIPS_5 + year, ln_emp_flood_df, cluster = "FIPS_5")
+
+```
+
+### Summary
+
+```{r }
+
+summary(feols_ln_emp.Event)
+
+```
+
+### Figure X - Event Plot
+
+```{r }
+
+iplot(feols_ln_emp.Event)
+
+```
+
+# fect
+
+```{r }
+
+library(fect)
+library(panelView)
+
+```
+
+## Model
+
+```{r }
+
+fect_ln_emp <- fect(ln_emp ~ treatment, 
+                data = ln_emp_flood_df, 
+                index = c("FIPS","year"),
+                # force: include both unit and time effects
+                force = "two-way",
+                # Interactive Fixed Effects
+                method = "ife", 
+                # Cross-validation to pick number of factors
+                CV = TRUE, 
+                # Test between 0 and 5 factors
+                r = c(0, 5), 
+                se = TRUE, 
+                nboots = 200, 
+                parallel = TRUE,
+                #cores = 4) # 4 for GC pc
+                cores = 6) # 6 for home PC
+
+```
+
+## Summary
+
+```{r }
+
+print(fect_ln_emp)
+
+```
+
+### Plot
+
+```{r }
+
+plot(fect_ln_emp, main = "Estimated ATT (IFEct)")
+
+```
+
+```{r}
+
+fect_ln_emp$est.att
+
+```
+

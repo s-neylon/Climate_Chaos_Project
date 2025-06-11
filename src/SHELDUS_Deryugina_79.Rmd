@@ -1,0 +1,472 @@
+---
+title: "SHELDUS Hurricane Import"
+output: html_document
+date: "2024-03-28"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(here)
+library(tidyverse)
+library(stringr)
+library(haven)
+
+set.seed(1157)
+
+```
+
+# Notes
+
+##(3-28-24)
+
+Importing SHELDUS data. A lot of missing data and other analysis still to go through!
+
+##(4-2-24)
+
+I used ChatGPT to analyze just the hurricane damage data, and it seemed clean and nothing missing!
+
+##(4-3-24)
+
+### Dropping 80th percentile for median
+Okay, so, I have been doing analysis. I am not getting significant results with 80th percentile of damage, unless I drop Houston TX! While I don't want to data dredge, I do think it is legitimate to drop my serious threshold, to get more data. In fact, this should include more counties which didn't have an employment effect!
+
+I am doing the median instead.
+
+- Update: Median made it worse! So, I'm not data dredging haha. But Houston really is an outlier, I need to figure out how to deal with it.
+
+##(4-29-24)
+
+### Deryugina
+
+Now this is a Deryugina script!
+
+### All Hurricanes?
+
+No more serious hurricanes nonsense - if there is damage from a hurricane, it's a hurricane!
+
+##(6-9-24)
+
+Because my earlier SHELDUS data didn't go back far enough, I got a new file from SHELDUS, going back to 1960, but aggregated by year. For the code dealing with 1985 onwards monthly data, see 'SHELDUS_Deryugina_85-22.Rmd'.
+
+### To Do
+
+DONE - Adjust SHELDUS treatment so it is only between 1979-2002
+TO DO - Do Deryugina versions of the treatment variables
+
+# Important Notes
+
+## Treat Var Name Changes
+
+I have added 'SHLD' and 'Dery' suffixes to treatment variables, to indicate whether they come from SHELDUS or Deryugina hurricane indicators.
+
+I have changed the following variable names, which will need to be changed in the analysis code!
+
+'treatment' -> 'post_treat'
+'treat' -> 'ever_treated' 
+'treatment_post' -> 'treat_DiD'
+
+#(08-17-24)
+
+##Different hurricane years!!
+
+Some years where I calculate there was hurricane damage, there isn't this damage in Deryugina.
+
+NEW NOTE! This is fine! I wanted to run the SHELDUS treatment models using the Deryugina outcomes!
+
+# 1979!
+
+The SHELDUS data in 1979 is odd - splitting damage between many more counties (526) than any other year (the next biggest year is 85 counties).
+
+Until I can figure out what the deal is, I am going create a special version of the data which calculates the first hurricane year without 1979.
+
+Once I figure this out, this section and code will be removed!
+
+# Import SHELDUS
+
+```{r eval=TRUE}
+
+SHELDUS_df <- read_csv(here("data/SHELDUS/sheldus_1960-2023_byYR_hurr-flood-wind.csv"),
+                       col_types = cols(
+  `State Name` = col_character(),
+  `County Name` = col_character(),
+  `County FIPS` = col_character(),
+  Hazard = col_character(),
+  Year = col_double(),
+  CropDmg = col_double(),
+  `CropDmg(ADJ 2022)` = col_double(),
+  `CropDmgPerCapita(ADJ 2022)` = col_double(),
+  PropertyDmg = col_double(),
+  `PropertyDmg(ADJ 2022)` = col_double(),
+  `PropertyDmgPerCapita(ADJ 2022)` = col_double(),
+  Injuries = col_double(),
+  InjuriesPerCapita = col_double(),
+  Fatalities = col_double(),
+  FatalitiesPerCapita = col_double(),
+  Duration_Days = col_double(),
+  Fatalities_Duration = col_double(),
+  Injuries_Duration = col_double(),
+  Property_Damage_Duration = col_double(),
+  Crop_Damage_Duration = col_double(),
+  Records = col_double()
+)) %>% 
+  rename(
+  state_name = `State Name`,
+  county_name_SHELDUS = `County Name`,
+  FIPS_5 = `County FIPS`,
+  PropertyDmg_Adj2022 = `PropertyDmg(ADJ 2022)`,
+  PropertyDmgPerCapita_Adj2022 = `PropertyDmgPerCapita(ADJ 2022)`
+  ) %>% 
+  mutate(
+    FIPS_5 = str_replace_all(FIPS_5, "'", "")
+  )
+
+```
+
+## Hurricane Data
+
+```{r}
+
+hurr_SHELDUS <- SHELDUS_df %>% 
+  select(state_name:Year | PropertyDmg:PropertyDmgPerCapita_Adj2022 | Duration_Days | Records) %>% 
+  filter(Hazard == "Hurricane/Tropical Storm" & Year >= 1965 & Year <= 2012) %>% 
+  mutate(
+    SHELDUS = 1
+  )
+
+```
+
+### Drop SHELDUS Data
+
+```{r}
+
+rm(SHELDUS_df)
+
+```
+
+## Export Hurricane Data
+
+```{r eval=FALSE}
+
+write_csv(hurr_SHELDUS, here("data/SHELDUS/hurr_SHELDUS_1965-2012_df.csv"))
+
+```
+
+
+# Import Deryugina
+
+## DATA NOTE
+
+"allYRS_Final_dataset_processed.dta" - this is a dataset prepared in Stata, using the "AllYEARS_Dery_DataProc_justClean.do" do file, which is just the Deryugina cleaning file, modified so it works with my file structure.
+
+In other words,"allYRS_Final_dataset_processed.dta" is the data Deryugina ran her analysis on.
+
+## Import
+
+```{r}
+
+dery_df <- read_dta(here("data/Stata/allYRS_Final_dataset_processed.dta")) %>% 
+  # Character version of county_fips
+  mutate(FIPS_5 = as.character(county_fips)) %>% 
+  mutate(
+    FIPS_5 = case_when(
+      str_length(FIPS_5) == 5 ~ FIPS_5,
+      str_length(FIPS_5) == 4 ~ str_c("0", FIPS_5))
+    )
+
+```
+
+# Join
+
+```{r eval=TRUE}
+
+# Function to join datasets and filter
+join_and_filter <- function(dery_df, hurr_SHELDUS) {
+  dery_df %>%
+    left_join(hurr_SHELDUS, by = c("FIPS_5" = "FIPS_5", "year" = "Year")) %>%
+    mutate(pre_79 = if_else(year < 1979, 1, 0),
+           post_2002 = if_else(year > 2002, 1, 0),
+           across(starts_with("PropertyDmg"), ~replace_na(.x, 0))
+    )
+}
+
+```
+
+```{r eval=TRUE}
+
+# Join the datasets and filter
+HrSHLD_dery_df <- join_and_filter(dery_df, hurr_SHELDUS)
+
+```
+
+## Drop Datasets
+
+```{r}
+
+rm(dery_df, hurr_SHELDUS)
+
+```
+
+# Treatment Variables
+
+NOTE: The notes on these variables I wrote for the Hill Final Paper, so they might not all make sense in this context.
+
+I have added 'SHLD' and 'Dery' suffixes to treatment variables, to indicate whether they come from SHELDUS or Deryugina hurricane indicators.
+
+## Hurricane?
+
+These are the different indicators for the county-year when a hurricane hit.
+
+Reminder that, for this code, the SHELDUS indicators will not be used, but the code is still here.
+
+### Deryugina
+
+'hurricane' is the year a county had a hurrican pass through, with winds of more than 74mph.
+
+### SHELDUS
+
+#### 79! Any Hurricane damage
+
+!!!!!!!!!1979 !!!! Has been removed!!!
+
+```{r eval=TRUE}
+
+HrSHLD_dery_df <- HrSHLD_dery_df %>%
+  # Serious hurricane damage
+  mutate(any_hurrDMG_SHLD = if_else(PropertyDmg_Adj2022 > 0 & year >= 1980 & year <= 2002, 1, 0))
+
+```
+
+#### Serious Hurricane damage
+
+NOTE: I am NOT using this serious threshold for treatments, in the hurricane case!! Just leaving the code here, in case.
+
+```{r eval=FALSE}
+
+# Define serious hurricane damage at 50th percentile of SHELDUS counties
+
+serious_threshold <- HrSHLD_dery_df %>%
+  filter(SHELDUS == 1 & PropertyDmgPerCapita_Adj2022 > 0) %>%  # Filter rows where SHELDUS == 1 $ drop zeroes
+  summarise(quantile_80 = quantile(PropertyDmgPerCapita_Adj2022, 0.5, na.rm = TRUE)) %>%
+  pull(quantile_80)  # Extract the quantile value
+
+# Check the calculated threshold
+serious_threshold
+
+# Add variable
+HrSHLD_dery_df <- HrSHLD_dery_df %>%
+  # Serious hurricane damage
+  mutate(serious_hurr = if_else(PropertyDmgPerCapita_Adj2022 >= serious_threshold, 1, 0))
+
+```
+
+## 'group' variable
+
+Used for Callaway and Sant'Anna (2021) Group-Time ATT. I also use the 'group' variable to build other treatment variables.
+
+'group' is the first year a county has any hurricane, and is 0 if never-treated.
+
+### SHELDUS
+
+```{r eval=TRUE}
+
+HrSHLD_dery_df <- HrSHLD_dery_df %>%
+  # Group by county
+  group_by(FIPS_5) %>%
+  # Sort by year within each county
+  arrange(FIPS_5, year) %>%
+  mutate(
+    first_hurr_year_SHLD = ifelse(any(any_hurrDMG_SHLD == 1), min(year[any_hurrDMG_SHLD == 1]), NA_real_),
+    group_SHLD = ifelse(is.na(first_hurr_year_SHLD), 0, first_hurr_year_SHLD)
+  ) %>%
+  ungroup()
+
+```
+
+### Deryugina
+
+```{r eval=TRUE}
+
+HrSHLD_dery_df <- HrSHLD_dery_df %>%
+  arrange(FIPS_5, year) %>%
+  group_by(FIPS_5) %>%
+  mutate(
+    first_hurr_year_Dery = ifelse(any(hurricane == 1), min(year[hurricane == 1]), NA_real_),
+    group_Dery = ifelse(is.na(first_hurr_year_Dery), 0, first_hurr_year_Dery)
+  ) %>%
+  ungroup()
+
+```
+
+## 'post_treat' variable
+
+(Previously was called 'treatment')
+
+'post_treat' is an indicator for the post-treatment period for each treated county.It is 1 for the year the hurricane happened, and any year after.
+
+### SHELDUS
+
+```{r eval=T}
+
+HrSHLD_dery_df <- HrSHLD_dery_df %>%
+  # Group by county
+  group_by(FIPS_5) %>%
+  # Sort by year within each county
+  arrange(FIPS_5, year) %>%
+  # Create the treatment variable
+  mutate(post_treat_SHLD = cummax(any_hurrDMG_SHLD)) %>%
+  ungroup()
+
+```
+
+### Deryugina
+
+```{r eval=TRUE}
+
+HrSHLD_dery_df <- HrSHLD_dery_df %>%
+  # Group by county
+  group_by(FIPS_5) %>%
+  # Sort by year within each county
+  arrange(FIPS_5, year) %>%
+  # Create the treatment variable
+  mutate(post_treat_Dery = cummax(hurricane)) %>%
+  ungroup()
+
+```
+
+## 'time_to_treat' & 'ever_treated'
+
+Variables for 'fixest' package.
+
+'time_to_treat' is the event study, with -1000 for never-treated counties (following 'fixest' documentation).
+
+'ever_treated' is a dummy for whether a county is ever treated. (Previously 'treat')
+
+### SHELDUS
+
+```{r eval=T}
+
+HrSHLD_dery_df <- HrSHLD_dery_df %>% 
+  mutate(
+    time_to_treat_SHLD = ifelse(group_SHLD > 0, year - group_SHLD, -1000),
+    ever_treated_SHLD = ifelse(group_SHLD > 0, 1, 0)
+  )
+
+```
+
+### Deryugina
+
+```{r eval=TRUE}
+
+HrSHLD_dery_df <- HrSHLD_dery_df %>% 
+  mutate(
+    time_to_treat_Dery = ifelse(group_Dery > 0, year - group_Dery, -1000),
+    ever_treated_Dery = ifelse(group_Dery > 0, 1, 0)
+  )
+
+```
+
+## 'treat_DiD'
+
+'treat_DiD' is an interaction of 'post_treat' (the post-treatment period indicator) and 'ever_treated' (the ever-treated indicator). The coefficient of this interaction is the traditional difference-in-differences ATT estimate.
+
+### SHELDUS
+
+```{r eval=T}
+
+HrSHLD_dery_df <- HrSHLD_dery_df %>% 
+  mutate(
+    treatment_post_SHLD = post_treat_SHLD * ever_treated_SHLD
+  )
+
+```
+
+### Deryugina
+
+```{r eval=TRUE}
+
+HrSHLD_dery_df <- HrSHLD_dery_df %>% 
+  mutate(
+    treatment_post_Dery = post_treat_Dery * ever_treated_Dery
+  )
+
+```
+
+# Other Data Management
+
+## Save .rds
+
+```{r}
+
+saveRDS(HrSHLD_dery_df, here("data/SHELDUS/SHELDUS_Deryugina79.rds"))
+
+```
+
+
+## Export Full Data
+
+```{r}
+
+# Full Data
+write_csv(HrSHLD_dery_df, here("data/SHELDUS/SHELDUS_Deryugina79.csv"))
+
+```
+
+### Sample Hurr State (note)
+
+The 'hs_' file, for the states in the 'sample_hurr_state' group, is not included here. That is because I used the Deryugina data set AFTER her DataProcessingAnalysis.do file, and this file filters for only the Sample Hurr States.
+
+# Sample
+
+## Simple
+
+```{r eval=FALSE}
+
+sample_df <- HrSHLD_dery_df %>%
+  slice_sample(n = 100)
+
+```
+
+```{r eval=FALSE}
+
+write_csv(sample_df, here("data/SHELDUS/sample_dery_df.csv"))
+
+```
+
+## Sample Counties
+
+```{r eval=FALSE}
+
+# Sample 10% of the unique counties
+sampled_counties <- HrSHLD_dery_df %>%
+  distinct(FIPS_5) %>%
+  slice_sample(prop = 0.10) %>%
+  pull(FIPS_5)
+
+# Filter your dataset to include only the data from the sampled counties.
+smpl_counties_df <- HrSHLD_dery_df %>%
+  filter(FIPS_5 %in% sampled_counties)
+
+```
+
+### Treated Counties
+
+```{r eval=FALSE}
+
+# Sample 5% of the unique counties
+sampled_Tcounties <- HrSHLD_dery_df %>%
+  filter(ever_treated_SHLD == 1) %>% 
+  distinct(FIPS_5) %>%
+  slice_sample(prop = 0.05) %>%
+  pull(FIPS_5)
+
+# Filter your dataset to include only the data from the sampled counties.
+smpl_Tcounties_df <- HrSHLD_dery_df %>%
+  filter(FIPS_5 %in% sampled_Tcounties) %>% 
+  # Check SHELDUS Cleaning
+  select(year | FIPS_5:treatment_post_SHLD)
+
+```
+
+
+

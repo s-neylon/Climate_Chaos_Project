@@ -1,0 +1,117 @@
+---
+title: "cps_linking_test1"
+author: "Sam Neylon"
+date: "2025-02-15"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(here)
+library(ipumsr)
+library(tidyverse)
+library(stringr)
+library(lubridate)
+
+# library(scales)
+
+set.seed(7008)
+
+```
+
+# Notes
+
+##(02-15-2025)
+
+Testing out CPS linking using data from 2016-2019, ages 19-65.
+
+# Import
+
+## CPS data - ipumsr
+
+```{r eval=TRUE}
+
+cps_df <- read_ipums_ddi(here("data/CPS_linking/testing/cps_00009.xml"))
+cps_df <- read_ipums_micro(cps_df)
+
+```
+
+### FIPS - Character
+
+```{r eval=T}
+
+cps_df <- cps_df %>% 
+  mutate(FIPS_str = ifelse(COUNTY == 0, "00000", str_pad(COUNTY, width = 5, pad = "0")))
+
+```
+
+## SHELDUS Flood Data
+
+```{r eval=TRUE}
+
+flood_SHELDUS_df <- readRDS(here("data/CPS_linking/testing/flood_SHELDUS_cpsLINK_df.rds")) %>% 
+  filter(serious_flood == 1)
+
+```
+
+
+# Flood Indicator
+
+## Join
+
+```{r eval=TRUE}
+
+full_df <- cps_df %>% 
+  left_join(flood_SHELDUS_df, by = c("FIPS_str" = "county_FIPS", "YEAR" = "Year", "MONTH" = "Month"))
+
+```
+
+### Clean
+
+```{r eval=TRUE}
+
+rm(cps_df, flood_SHELDUS_df)
+
+```
+
+## Variables 1
+
+```{r eval=FALSE}
+
+test_full_df <- full_df %>% 
+  mutate(
+    date_ym = make_date(YEAR, MONTH, 1),
+    flood_month = if_else(
+      serious_flood == 1,
+      date_ym,          # Date value (keep as date)
+      as.Date(NA)        # Explicit NA of type Date (not 0)
+    )
+  )
+
+```
+
+## Treated Individual
+
+```{r eval=FALSE}
+
+full_df <- full_df %>% 
+  group_by(CPSIDV) %>% 
+  mutate(treated = max(serious_flood)) %>% 
+  ungroup() %>% 
+  
+
+```
+
+
+
+
+# EDA
+
+## MIS of Flood
+
+```{r eval=FALSE}
+
+
+
+```

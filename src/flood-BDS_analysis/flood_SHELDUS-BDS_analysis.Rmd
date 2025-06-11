@@ -1,0 +1,865 @@
+---
+title: "Flood-BDS Analysis 1-3-24"
+output: html_document
+date: "2024-01-03"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(here)
+library(tidyverse)
+library(stringr)
+# library(scales)
+
+set.seed(7008)
+
+```
+
+# Notes
+    
+##(4-27-24)
+
+This document was originally for analyzing flood data from the NWS, but I have decided to go with the SHELDUS flood data instead. 
+
+The SHELDUS_flood_import file is where the treatment variable is calculated.
+
+# Import
+
+```{r}
+
+flood_df <- read_csv(here("data/SHELDUS/BDS_flood_SHELDUS.csv"),
+                     col_types = cols(
+  year = col_double(),
+  st = col_character(),
+  cty = col_character(),
+  firms = col_double(),
+  estabs = col_double(),
+  emp = col_double(),
+  denom = col_double(),
+  estabs_entry = col_double(),
+  estabs_entry_rate = col_double(),
+  estabs_exit = col_double(),
+  estabs_exit_rate = col_double(),
+  job_creation = col_double(),
+  job_creation_births = col_double(),
+  job_creation_continuers = col_double(),
+  job_creation_rate_births = col_double(),
+  job_creation_rate = col_double(),
+  job_destruction = col_double(),
+  job_destruction_deaths = col_double(),
+  job_destruction_continuers = col_double(),
+  job_destruction_rate_deaths = col_double(),
+  job_destruction_rate = col_double(),
+  net_job_creation = col_double(),
+  net_job_creation_rate = col_double(),
+  reallocation_rate = col_double(),
+  firmdeath_firms = col_double(),
+  firmdeath_estabs = col_double(),
+  firmdeath_emp = col_double(),
+  FIPS_5 = col_character(),
+  PropertyDmg = col_double(),
+  PropertyDmg_Adj2022 = col_double(),
+  PropertyDmgPerCapita_Adj2022 = col_double(),
+  SHELDUS = col_double(),
+  pre_96 = col_double(),
+  serious_flood = col_double(),
+  treatment = col_double(),
+  first_hurr_year = col_double(),
+  group = col_double(),
+  ln_emp = col_double()
+))
+
+```
+
+## time_to_treat & treat
+
+```{r}
+
+flood_df <- flood_df %>% 
+  mutate(
+    time_to_treat = ifelse(group > 0, year - group, -1000),
+    treat = ifelse(group > 0, 1, 0)
+  )
+
+```
+
+### Group Variable
+
+```{r}
+
+check_group_assignments <- function(df, group_column, fips_column) {
+  # Calculate the count of counties for each unique value in the group column
+  group_counts <- df %>%
+    group_by(!!sym(group_column)) %>%
+    summarise(Count = n_distinct(!!sym(fips_column))) %>%
+    ungroup()
+
+  # Calculate the number of missing (NA) values in the group column
+  missing_count <- sum(is.na(df[[group_column]]))
+
+  # Calculate the number of counties with zero in the group column
+  zero_count <- sum(df[[group_column]] == 0, na.rm = TRUE)
+
+  # Combine the results into a single object
+  list(
+    group_counts = group_counts,
+    missing_count = missing_count,
+    zero_count = zero_count
+  )
+}
+
+```
+
+```{r}
+
+# Assuming your dataframe is named flood_df and has the columns 'group' and 'FIPS_5'
+check_group_assignments(flood_df, group_column = "group", fips_column = "FIPS_5")
+
+```
+
+# Analysis
+
+## Variables
+
+Variables needed for analysis
+
+```{r}
+
+# FIPS as Numeric (for 'did' package)
+flood_df <- flood_df %>% mutate(
+  FIPS = as.numeric(FIPS_5)
+  )
+
+```
+
+## Filter missing
+
+```{r}
+
+# Function to drop counties with any missing values in a specified variable
+drop_miss_cty <- function(data, variable) {
+  # Identifying counties with any missing values in the specified variable
+  counties_with_missing <- data %>%
+    group_by(FIPS_5) %>%
+    filter(any(is.na(.data[[variable]]))) %>%
+    summarise() %>%
+    pull(FIPS_5)
+
+  # Excluding these counties from the dataset
+  data_filtered <- data %>%
+    filter(!(FIPS_5 %in% counties_with_missing))
+
+  return(data_filtered)
+}
+
+# Example usage: 
+# flood_BDS_filtered <- drop_counties_with_missing(flood_BDS, 'emp')
+
+
+```
+
+```{r}
+
+# Function to verify the results of drop_miss_cty
+verify_filtering <- function(original_data, filtered_data, variable) {
+  # Check for missing values in the specified variable in the filtered dataset
+  missing_values_check <- sum(is.na(filtered_data[[variable]]))
+
+  # Compare the number of unique counties before and after filtering
+  num_counties_before <- length(unique(original_data$FIPS_5))
+  num_counties_after <- length(unique(filtered_data$FIPS_5))
+
+  # Output the results
+  cat("Verification Results:\n")
+  cat("Missing values in '", variable, "' after filtering: ", missing_values_check, "\n", sep = "")
+  cat("Number of counties before filtering: ", num_counties_before, "\n")
+  cat("Number of counties after filtering: ", num_counties_after, "\n")
+  cat("Number of counties removed: ", (num_counties_before - num_counties_after), "\n")
+
+  # List of removed counties
+  if (num_counties_before > num_counties_after) {
+    removed_counties <- setdiff(unique(original_data$FIPS_5), unique(filtered_data$FIPS_5))
+    cat("Counties removed:\n")
+    print(removed_counties)
+  }
+}
+
+# Example usage:
+# verify_filtering(flood_BDS, flood_BDS_filtered, 'emp')
+
+
+```
+
+### ln_emp
+
+```{r}
+
+ln_emp_flood_df <- drop_miss_cty(flood_df, 'ln_emp')
+
+```
+
+Check the cleaning:
+
+```{r}
+
+verify_filtering(flood_df, ln_emp_flood_df, 'ln_emp')
+
+```
+
+### estabs_exit_rate
+
+```{r eval=FALSE}
+
+estXr_flood_df <- drop_miss_cty(flood_df, 'estabs_exit_rate')
+
+```
+
+Check the cleaning:
+
+```{r eval=FALSE}
+
+verify_filtering(flood_df, estXr_flood_df, 'estabs_exit_rate')
+
+```
+
+# TWFE (plm)
+
+I wanted to capture ChatGPT's attempt at a TWFE, even if I don't use it
+
+```{r eval=FALSE}
+
+library(plm)
+
+```
+
+```{r eval=FALSE}
+
+# Preparing the data for the regression
+flood_BDS_p <- pdata.frame(ln_emp_flood_df, index = c("FIPS_5", "year"))
+
+
+```
+
+```{r eval=FALSE}
+
+# Running the two-way fixed effects regression
+# Employment as dependent variable, treatment as independent variable, controlling for county and year fixed effects
+model.lnemp.1 <- plm(ln_emp ~ treatment, data = flood_BDS_p, model = "within", effect = "twoways")
+
+# Displaying the results
+summary(model.lnemp.1)
+
+```
+
+## Data Check
+
+```{r eval=FALSE}
+
+# Group the data by FIPS code
+grouped_data <- p_flood_BDS %>%
+  filter(group > 0) %>% # Filter for treated counties
+  group_by(FIPS_5)
+
+# Get a list of unique FIPS codes
+unique_fips <- unique(p_flood_BDS$FIPS_5)
+
+# Sample a number of unique FIPS codes (e.g., 5 FIPS codes)
+sampled_fips <- sample(unique_fips, 20)
+
+# Filter the original grouped data to only include the sampled FIPS codes
+smpl_p_data <- grouped_data %>%
+  filter(FIPS_5 %in% sampled_fips) %>%
+  ungroup() # Optionally ungroup the data frame
+
+```
+
+# Frontiers of DiD
+
+From Causal Mixtape - Frontiers of DiD
+
+```{r eval=FALSE}
+
+library(did)
+
+```
+
+## *Log Emp Model 1
+
+```{r eval=FALSE}
+
+ln_emp_1 <- att_gt(yname="ln_emp",
+                  tname="year",
+                  idname="FIPS",
+                  gname="group",
+                  data=ln_emp_flood_df,
+                  control_group = "notyettreated")
+
+```
+
+```{r eval=FALSE}
+
+  ln_emp_1_es <- aggte(ln_emp_1, type="dynamic")
+
+```
+
+```{r eval=FALSE}
+
+  ggdid(ln_emp_1_es, xgap = 4)
+
+```
+
+```{r eval=FALSE}
+
+summary(ln_emp_1_es)
+
+```
+
+```{r eval=FALSE}
+
+  ln_emp_1_es10 <- aggte(ln_emp_1, type="dynamic", min_e = -10, max_e = 10)
+
+```
+
+```{r eval=FALSE}
+
+summary(ln_emp_1_es10)
+
+```
+
+```{r eval=FALSE}
+
+  ggdid(ln_emp_1_es10, xgap = 2)
+
+```
+
+```{r eval=FALSE}
+
+  ln_emp_1_overall <- aggte(ln_emp_1, type="group")
+  summary(ln_emp_1_overall)
+
+```
+
+```{r eval=FALSE}
+
+  ln_emp_1_simple <- aggte(ln_emp_1, type="simple")
+  summary(ln_emp_1_simple)
+
+```
+
+## Emp Model 1
+
+```{r eval=FALSE}
+
+emp_1 <- att_gt(yname="emp",
+                  tname="year",
+                  idname="FIPS",
+                  gname="group",
+                  data=emp_flood_df,
+                  control_group = "notyettreated")
+
+```
+
+```{r eval=FALSE}
+
+  emp_1_es <- aggte(emp_1, type="dynamic")
+
+```
+
+```{r eval=FALSE}
+
+  ggdid(emp_1_es, xgap = 5)
+
+```
+
+```{r eval=FALSE}
+
+  emp_1_es10 <- aggte(emp_1, type="dynamic", min_e = -10, max_e = 10)
+
+```
+
+```{r eval=FALSE}
+
+  ggdid(emp_1_es10, xgap = 2)
+
+```
+
+```{r eval=FALSE}
+
+  emp_1_overall <- aggte(emp_1, type="group")
+
+```
+
+```{r eval=FALSE}
+
+  summary(emp_1_overall)
+
+```
+
+## estabs_exit_rate
+
+```{r eval=FALSE}
+
+est_ex_1 <- att_gt(yname="estabs_exit_rate",
+                  tname="year",
+                  idname="FIPS",
+                  gname="group",
+                  data=emp_flood_df,
+                  control_group = "notyettreated")
+
+```
+
+```{r eval=FALSE}
+
+  est_ex_1_es <- aggte(est_ex_1, type="dynamic")
+
+```
+
+```{r eval=FALSE}
+
+  ggdid(est_ex_1_es, xgap = 5)
+
+```
+
+```{r eval=FALSE}
+
+  est_ex_1_overall <- aggte(est_ex_1, type="group")
+
+```
+
+```{r eval=FALSE}
+
+  summary(est_ex_1_overall)
+
+```
+
+## realloc_rate
+
+```{r eval=FALSE}
+
+realloc_1 <- att_gt(yname="reallocation_rate",
+                  tname="year",
+                  idname="FIPS",
+                  gname="group",
+                  data=emp_flood_df,
+                  control_group = "notyettreated")
+
+```
+
+```{r eval=FALSE}
+
+  realloc_1_es <- aggte(realloc_1, type="dynamic")
+
+```
+
+```{r eval=FALSE}
+
+  ggdid(realloc_1_es, xgap = 5)
+
+```
+
+```{r eval=FALSE}
+
+  realloc_1_overall <- aggte(realloc_1, type="group")
+
+```
+
+```{r eval=FALSE}
+
+  summary(realloc_1_overall)
+
+```
+
+# ifect
+
+## 'fect' load
+
+```{r eval=FALSE}
+
+# NOTE! I am not going to install the development version right now, because I don't want to mess with RTools
+
+library(devtools)
+
+# Check if the package is already installed
+if (!requireNamespace("fect", quietly = TRUE)) {
+ # Install the package if it's not installed
+ devtools::install_github('xuyiqing/fect')
+} else {
+ # Package is already installed, so skip installation
+ message("Package 'fect' is already installed.")
+}
+
+# Check if the package is already installed
+if (!requireNamespace("panelView", quietly = TRUE)) {
+ # Install the package if it's not installed
+ devtools::install_github('xuyiqing/panelView')
+} else {
+ # Package is already installed, so skip installation
+ message("Package 'panelView' is already installed.")
+}
+
+```
+
+```{r eval=FALSE}
+
+library(fect)
+library(panelView)
+
+```
+
+## *ln_emp Model
+
+```{r eval=FALSE}
+
+ln_emp_1 <- fect(ln_emp ~ treatment, 
+                data = ln_emp_flood_df, 
+                index = c("FIPS","year"),
+                # force: include both unit and time effects
+                force = "two-way",
+                # Interactive Fixed Effects
+                method = "ife", 
+                # Cross-validation to pick number of factors
+                CV = TRUE, 
+                # Test between 0 and 5 factors
+                r = c(0, 5), 
+                se = TRUE, 
+                nboots = 200, 
+                parallel = TRUE,
+                #cores = 4) # 4 for GC pc
+                cores = 6) # 6 for home PC
+
+```
+
+```{r eval=FALSE}
+
+print(ln_emp_1)
+
+```
+
+### Plot
+
+```{r eval=FALSE}
+
+plot(ln_emp_1, main = "Estimated ATT (IFEct)")
+
+```
+
+### Plot xlim
+
+```{r eval=FALSE}
+
+plot(ln_emp_1, xlim = c(-10, 10), main = "Estimated ATT (IFEct)")
+
+```
+
+### HTE (Heterogenous Treatment Effects)
+
+```{r eval=FALSE}
+
+plot(ln_emp_1, type = "box", xlim = c(-10, 10), main = "ATT - HTE Box Plot")
+
+```
+
+### Calendar Time
+
+```{r eval=FALSE}
+
+plot(ln_emp_1, type = "calendar")
+
+```
+
+```{r eval=FALSE}
+
+summary(ln_emp_1)
+
+```
+
+## emp Model
+
+```{r eval=FALSE}
+
+emp_1 <- fect(emp ~ treatment, 
+                data = emp_flood_df, 
+                index = c("FIPS","year"),
+                # force: include both unit and time effects
+                force = "two-way",
+                # Interactive Fixed Effects
+                method = "ife", 
+                # Cross-validation to pick number of factors
+                CV = TRUE, 
+                # Test between 0 and 5 factors
+                r = c(0, 5), 
+                se = TRUE, 
+                nboots = 200, 
+                parallel = TRUE,
+                cores = 6) # 6 for home PC
+
+```
+
+### Summary
+
+```{r eval=FALSE}
+
+print(emp_1)
+
+```
+
+### Plot
+
+```{r eval=FALSE}
+
+plot(emp_1, main = "Estimated ATT (IFEct)")
+
+```
+
+# fixest
+
+```{r eval=FALSE}
+
+library(fixest)
+
+```
+
+## *Event Study - ln_emp Model 1
+
+```{r eval=FALSE}
+
+feols_ln_emp <- feols(ln_emp ~ i(time_to_treat, treat, ref = c(-1, -1000)) | FIPS_5 + year, ln_emp_flood_df, cluster = "FIPS_5")
+
+```
+
+```{r eval=FALSE}
+
+iplot(feols_ln_emp, xlim = c(-10, 10))
+
+```
+
+```{r eval=FALSE}
+
+iplot(feols_ln_emp)
+
+```
+
+```{r eval=FALSE}
+
+summary(feols_ln_emp)
+
+```
+
+```{r eval=FALSE}
+
+print(feols_ln_emp)
+
+```
+### Exploration
+
+```{r eval=FALSE}
+
+
+
+```
+
+## Sun Abraham Version - ln_emp
+
+```{r eval=FALSE}
+
+sunab_ln_emp_model <- feols(ln_emp ~ sunab(group, year) | FIPS_5 + year, ln_emp_flood_df) 
+
+```
+
+```{r eval=FALSE}
+
+iplot(sunab_ln_emp_model)
+
+```
+
+```{r eval=FALSE}
+
+summary(sunab_ln_emp_model, agg = "att")
+
+```
+
+```{r eval=FALSE}
+
+coefplot(feols_ln_emp)
+
+```
+
+## ln_emp 2
+
+```{r eval=FALSE}
+
+feols_ln_emp.2 <- feols(ln_emp ~ i(year, treat) | FIPS_5 + year, ln_emp_flood_df)
+
+```
+
+```{r eval=FALSE}
+
+iplot(feols_ln_emp.2)
+
+```
+
+## *ATE - ln_emp 3
+
+
+
+```{r eval=FALSE}
+
+ln_emp_flood_df$treatment_post <- ln_emp_flood_df$treatment * ln_emp_flood_df$treat
+
+```
+
+```{r eval=FALSE}
+
+feols_ln_emp.3 <- feols(ln_emp ~ treatment_post | FIPS_5 + year, ln_emp_flood_df, cluster = "FIPS_5")
+
+```
+
+```{r eval=FALSE}
+
+summary(feols_ln_emp.3)
+
+```
+
+## base_stagg
+
+```{r eval=FALSE}
+
+data("base_stagg")
+
+```
+
+# OLS Regression
+
+```{r eval=FALSE}
+
+ln_emp_flood_df$treatment_post <- ln_emp_flood_df$treatment * ln_emp_flood_df$treat
+
+```
+
+```{r eval=FALSE}
+
+ols.ln_emp.model <- lm(ln_emp ~ treatment_post, data = ln_emp_flood_df)
+
+```
+
+```{r eval=FALSE}
+
+summary(ols.ln_emp.model)
+
+```
+
+# Data Exploration
+
+```{r eval=FALSE}
+
+flood_df %>% group_by(st) %>% count(st)
+
+```
+
+## Descriptives
+
+```{r eval=FALSE}
+
+ln_emp_flood_df %>%
+  filter(group > 0) %>% 
+  distinct(FIPS_5) %>%
+  count()
+  
+
+```
+
+```{r eval=FALSE}
+
+sum(ln_emp_flood_df$treatment_post)
+
+```
+
+# Data Exploration
+
+```{r eval=FALSE}
+
+flood_df %>% group_by(st) %>% count(st)
+
+```
+
+## Not identified?
+
+Fixing problem where there are duplicate county-years
+
+```{r eval=FALSE}
+
+duplicates <- ln_emp_flood_df %>%
+  group_by(FIPS, year) %>%
+  filter(n() > 1) %>%
+  ungroup()
+
+```
+
+# Panel Check
+
+```{r eval=FALSE}
+
+# Group the data by FIPS code
+grouped_data <- emp_flood_df %>%
+  filter(group > 0) %>% # Filter for treated counties
+  group_by(FIPS_5)
+
+# Get a list of unique FIPS codes
+unique_fips <- unique(emp_flood_df$FIPS_5)
+
+# Sample a number of unique FIPS codes (e.g., 5 FIPS codes)
+sampled_fips <- sample(unique_fips, 20)
+
+# Filter the original grouped data to only include the sampled FIPS codes
+smpl_data <- grouped_data %>%
+  filter(FIPS_5 %in% sampled_fips) %>%
+  ungroup() # Optionally ungroup the data frame
+
+```
+
+# Sample
+
+# Sample - ChatGPT
+
+Taking a smaller sample of the data, so ChatGPT can help me clean and modify it.
+
+```{r eval=FALSE}
+
+# Set up smaller dataset, filter years, create FIPS_5 County ID
+smpl_ln_emp_df <- ln_emp_flood_df
+
+# Sample 10% of the unique counties
+sampled_counties <- smpl_ln_emp_df  %>%
+  distinct(FIPS_5) %>%
+  slice_sample(prop = 0.10) %>%
+  pull(FIPS_5)
+
+# Filter your dataset to include only the data from the sampled counties.
+smpl_ln_emp_df <- smpl_ln_emp_df %>%
+  filter(FIPS_5 %in% sampled_counties)
+
+print(dim(smpl_ln_emp_df))
+head(smpl_ln_emp_df)
+
+
+```
+
+## Export Sample
+
+```{r eval=FALSE}
+
+write_csv(smpl_ln_emp_df, here("data/SHELDUS/smpl_ln_emp_df.csv"))
+
+```
+
+# Export ln_emp_flood_df
+
+NOTE: This includes the 'treatment_post' variable I created for the fixest ATE.
+
+```{r eval=FALSE}
+
+write_csv(ln_emp_flood_df, here("data/SHELDUS/ln_emp_flood_df.csv"))
+
+```
+

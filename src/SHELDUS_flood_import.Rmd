@@ -1,0 +1,358 @@
+---
+title: "SHELDUS Flood Import"
+output: html_document
+date: "2024-04-27"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(here)
+library(tidyverse)
+library(ggplot2)
+library(stringr)
+
+set.seed(1157)
+
+```
+
+# Notes
+
+##(3-28-24)
+
+Importing SHELDUS data. A lot of missing data and other analysis still to go through!
+
+##(4-2-24)
+
+I used ChatGPT to analyze just the hurricane damage data, and it seemed clean and nothing missing!
+
+##(04-27-24)
+
+THIS CODE IS FOR FLOODING DATA NOW!
+
+###Flooding Fixes
+
+I am now going to use the 95th percentile, so I need to change that.
+
+I should maybe use ChatGPT to check for missing data, now that this is flooding.
+
+Also, make sure I am capturing all states!! So get rid of code which filters for hurricane states.
+
+
+
+
+# Import SHELDUS
+
+```{r}
+
+SHELDUS_df <- read_csv(here("data/SHELDUS/sheldus_1985-2022_hurr-flood-wind.csv"),
+                       col_types = cols(
+  `State Name` = col_character(),
+  `County Name` = col_character(),
+  `County FIPS` = col_character(),
+  Hazard = col_character(),
+  Year = col_double(),
+  Month = col_double(),
+  CropDmg = col_double(),
+  `CropDmg(ADJ 2022)` = col_double(),
+  `CropDmgPerCapita(ADJ 2022)` = col_double(),
+  PropertyDmg = col_double(),
+  `PropertyDmg(ADJ 2022)` = col_double(),
+  `PropertyDmgPerCapita(ADJ 2022)` = col_double(),
+  Injuries = col_double(),
+  InjuriesPerCapita = col_double(),
+  Fatalities = col_double(),
+  FatalitiesPerCapita = col_double(),
+  Duration_Days = col_double(),
+  Fatalities_Duration = col_double(),
+  Injuries_Duration = col_double(),
+  Property_Damage_Duration = col_double(),
+  Crop_Damage_Duration = col_double(),
+  Records = col_double())
+) %>% 
+  rename(
+  state_name = `State Name`,
+  county_name = `County Name`,
+  county_FIPS = `County FIPS`,
+  CropDmg_Adj2022 = `CropDmg(ADJ 2022)`,
+  CropDmgPerCapita_Adj2022 = `CropDmgPerCapita(ADJ 2022)`,
+  PropertyDmg_Adj2022 = `PropertyDmg(ADJ 2022)`,
+  PropertyDmgPerCapita_Adj2022 = `PropertyDmgPerCapita(ADJ 2022)`
+  ) %>% 
+  mutate(
+    county_FIPS = str_replace_all(county_FIPS, "'", "")
+  )
+
+```
+
+## Flood Data
+
+```{r}
+
+flood_SHELDUS <- SHELDUS_df %>% 
+  select(state_name:Month | PropertyDmg:PropertyDmgPerCapita_Adj2022 | Duration_Days | Records) %>% 
+  filter(Hazard == "Flooding" & Year >= 1996)
+
+```
+
+## Sum damage by year
+
+```{r}
+
+flood_SHELDUS <- flood_SHELDUS %>%
+  group_by(state_name, county_name, county_FIPS, Year) %>%
+  summarise(
+    PropertyDmg = sum(PropertyDmg, na.rm = TRUE),
+    PropertyDmg_Adj2022 = sum(PropertyDmg_Adj2022, na.rm = TRUE),
+    PropertyDmgPerCapita_Adj2022 = sum(PropertyDmgPerCapita_Adj2022, na.rm = TRUE),
+    .groups = 'drop' # This option drops the grouping structure afterwards
+  ) %>% 
+  mutate(
+    SHELDUS = 1
+  )
+
+```
+
+## Remove Duplicates
+
+```{r}
+
+flood_SHELDUS <- flood_SHELDUS %>%
+  group_by(county_FIPS, Year) %>%
+  slice(1) %>%  # Keeps the first entry of each group
+  ungroup()
+
+```
+
+
+## Export Flood Data
+
+```{r eval=FALSE}
+
+write_csv(flood_SHELDUS, here("data/SHELDUS/flood_SHELDUS_df.csv"))
+
+```
+
+
+# Join with BDS
+
+```{r}
+
+# Function to load the bds_df dataset
+load_bds_df <- function(filepath) {
+  read_csv(filepath, col_types = cols(
+  year = col_double(),
+  st = col_character(),
+  cty = col_character(),
+  firms = col_double(),
+  estabs = col_double(),
+  emp = col_double(),
+  denom = col_double(),
+  estabs_entry = col_double(),
+  estabs_entry_rate = col_double(),
+  estabs_exit = col_double(),
+  estabs_exit_rate = col_double(),
+  job_creation = col_double(),
+  job_creation_births = col_double(),
+  job_creation_continuers = col_double(),
+  job_creation_rate_births = col_double(),
+  job_creation_rate = col_double(),
+  job_destruction = col_double(),
+  job_destruction_deaths = col_double(),
+  job_destruction_continuers = col_double(),
+  job_destruction_rate_deaths = col_double(),
+  job_destruction_rate = col_double(),
+  net_job_creation = col_double(),
+  net_job_creation_rate = col_double(),
+  reallocation_rate = col_double(),
+  firmdeath_firms = col_double(),
+  firmdeath_estabs = col_double(),
+  firmdeath_emp = col_double(),
+  FIPS_5 = col_character()
+  )) %>%
+    filter(year >= 1986 & year <= 2019)
+}
+
+# Function to join datasets
+join_and_filter <- function(bds_df, flood_SHELDUS) {
+  bds_df %>%
+    left_join(flood_SHELDUS, by = c("FIPS_5" = "county_FIPS", "year" = "Year")) %>%
+    mutate(pre_96 = if_else(year < 1996, 1, 0),
+           across(starts_with("PropertyDmg"), ~replace_na(.x, 0))
+    ) %>% 
+    select(!state_name:county_name)
+}
+
+```
+
+
+## Run Functions
+
+```{r}
+
+# Load and process the datasets
+bds_df_path <- here("data/BDS/bds_df.csv")
+
+bds_df <- load_bds_df(bds_df_path)
+
+```
+
+## Join
+
+```{r}
+
+# Join the datasets and filter
+floodSHELDUS_bds_df <- join_and_filter(bds_df, flood_SHELDUS)
+
+```
+
+### Export
+
+```{r eval=FALSE}
+
+write_csv(floodSHELDUS_bds_df, here("data/SHELDUS/BDS_flood_SHELDUS.csv"))
+
+```
+
+# Treatment Variable
+
+Setting the flooding damage threshold at 95th percentile for now (based on some analysis I did on ChatGPT).
+
+```{r}
+
+# Define serious hurricane damage at 80the percentile of SHELDUS counties
+
+serious_threshold <- floodSHELDUS_bds_df %>%
+  filter(SHELDUS == 1) %>%  # Filter rows where SHELDUS == 1
+  summarise(quantile_95 = quantile(PropertyDmgPerCapita_Adj2022, 0.95, na.rm = TRUE)) %>%
+  pull(quantile_95)  # Extract the quantile value
+
+# Check the calculated threshold
+serious_threshold
+
+```
+
+
+```{r}
+
+# Prepare the data
+floodSHELDUS_bds_df <- floodSHELDUS_bds_df %>%
+  # Define a serious flood
+  mutate(serious_flood = if_else(PropertyDmgPerCapita_Adj2022 >= serious_threshold, 1, 0)) %>%
+  # Group by county
+  group_by(FIPS_5) %>%
+  # Create the treatment variable
+  mutate(treatment = cummax(serious_flood)) %>%
+  ungroup()
+
+```
+
+## group variable
+
+```{r}
+
+floodSHELDUS_bds_df <- floodSHELDUS_bds_df %>%
+  arrange(FIPS_5, year) %>%
+  group_by(FIPS_5) %>%
+  mutate(
+    first_hurr_year = ifelse(any(serious_flood == 1), min(year[serious_flood == 1]), NA_real_),
+    group = ifelse(is.na(first_hurr_year), 0, first_hurr_year)
+  ) %>%
+  ungroup()
+
+```
+
+# Other Data Management
+
+## Log Employment
+
+```{r}
+
+floodSHELDUS_bds_df <- floodSHELDUS_bds_df %>% 
+  mutate(
+    ln_emp = log(emp + 1)
+  )
+
+```
+
+### Export Full Data
+
+```{r}
+
+# Full Data
+
+write_csv(floodSHELDUS_bds_df, here("data/SHELDUS/BDS_flood_SHELDUS.csv"))
+
+```
+
+# Sample
+
+```{r eval=FALSE}
+
+sample_df <- floodSHELDUS_bds_df %>%
+  slice_sample(n = 100)
+
+```
+
+```{r eval=FALSE}
+
+write_csv(sample_df, here("data/SHELDUS/sample_flood_df.csv"))
+
+```
+
+# EDA
+
+Hazards table
+
+```{r eval=FALSE}
+
+SHELDUS_df %>% 
+  count(Hazard) %>% 
+  arrange(desc(n))
+
+```
+
+Flooding damage histogram
+
+```{r eval=FALSE}
+
+# Creating a histogram
+flood_SHELDUS %>% 
+  filter(PropertyDmgPerCapita_Adj2022 > 0) %>% 
+ggplot(aes(x = PropertyDmgPerCapita_Adj2022)) + 
+  geom_histogram(bins = 30, fill = "blue", color = "black") +  # You can adjust the number of bins
+  coord_cartesian(ylim = c(0, 50))  # Adjust the y-axis to zoom in
+
+
+```
+
+Number of treated counties per year
+
+```{r eval=FALSE}
+
+floodSHELDUS_bds_df %>%
+  group_by(year) %>%
+  summarize(treated_counties = sum(serious_flood == 1, na.rm = TRUE))
+
+```
+
+Duplicates?
+
+```{r eval=FALSE}
+
+duplicates <- floodSHELDUS_bds_df %>%
+  group_by(FIPS_5, year) %>%
+  filter(n() > 1) %>%
+  ungroup()
+
+```
+
+```{r eval=FALSE}
+
+duplicates_raw <- flood_SHELDUS %>%
+  group_by(county_FIPS, Year) %>%
+  filter(n() > 1) %>%
+  ungroup()
+
+```
+

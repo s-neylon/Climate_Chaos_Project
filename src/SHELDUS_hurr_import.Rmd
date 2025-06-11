@@ -1,0 +1,341 @@
+---
+title: "SHELDUS Hurricane Import"
+output: html_document
+date: "2024-03-28"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(here)
+library(tidyverse)
+library(stringr)
+
+set.seed(1157)
+
+```
+
+# Notes
+
+##(3-28-24)
+
+Importing SHELDUS data. A lot of missing data and other analysis still to go through!
+
+##(4-2-24)
+
+I used ChatGPT to analyze just the hurricane damage data, and it seemed clean and nothing missing!
+
+##(4-3-24)
+
+### Dropping 80th percentile for median
+Okay, so, I have been doing analysis. I am not getting significant results with 80th percentile of damage, unless I drop Houston TX! While I don't want to data dredge, I do think it is legitimate to drop my serious threshold, to get more data. In fact, this should include more counties which didn't have an employment effect!
+
+I am doing the median instead.
+
+- Update: Median made it worse! So, I'm not data dredging haha. But Houston really is an outlier, I need to figure out how to deal with it.
+
+##(4-29-24)
+
+We're doing all hurricanes! There should be an indicator for any non-zero hurricane damage - it means a hurricane hit!
+
+
+# Import SHELDUS
+
+```{r}
+
+SHELDUS_df <- read_csv(here("data/SHELDUS/sheldus_1985-2022_hurr-flood-wind.csv"),
+                       col_types = cols(
+  `State Name` = col_character(),
+  `County Name` = col_character(),
+  `County FIPS` = col_character(),
+  Hazard = col_character(),
+  Year = col_double(),
+  Month = col_double(),
+  CropDmg = col_double(),
+  `CropDmg(ADJ 2022)` = col_double(),
+  `CropDmgPerCapita(ADJ 2022)` = col_double(),
+  PropertyDmg = col_double(),
+  `PropertyDmg(ADJ 2022)` = col_double(),
+  `PropertyDmgPerCapita(ADJ 2022)` = col_double(),
+  Injuries = col_double(),
+  InjuriesPerCapita = col_double(),
+  Fatalities = col_double(),
+  FatalitiesPerCapita = col_double(),
+  Duration_Days = col_double(),
+  Fatalities_Duration = col_double(),
+  Injuries_Duration = col_double(),
+  Property_Damage_Duration = col_double(),
+  Crop_Damage_Duration = col_double(),
+  Records = col_double())
+) %>% 
+  rename(
+  state_name = `State Name`,
+  county_name = `County Name`,
+  county_FIPS = `County FIPS`,
+  CropDmg_Adj2022 = `CropDmg(ADJ 2022)`,
+  CropDmgPerCapita_Adj2022 = `CropDmgPerCapita(ADJ 2022)`,
+  PropertyDmg_Adj2022 = `PropertyDmg(ADJ 2022)`,
+  PropertyDmgPerCapita_Adj2022 = `PropertyDmgPerCapita(ADJ 2022)`
+  ) %>% 
+  mutate(
+    county_FIPS = str_replace_all(county_FIPS, "'", "")
+  )
+
+```
+
+## Hurricane Data
+
+```{r}
+
+hurr_SHELDUS <- SHELDUS_df %>% 
+  select(state_name:Month | PropertyDmg:PropertyDmgPerCapita_Adj2022 | Duration_Days | Records) %>% 
+  filter(Hazard == "Hurricane/Tropical Storm" & Year >= 1996)
+
+```
+
+## Sum damage by year
+
+```{r}
+
+hurr_SHELDUS <- hurr_SHELDUS %>%
+  group_by(state_name, county_name, county_FIPS, Year) %>%
+  summarise(
+    PropertyDmg = sum(PropertyDmg, na.rm = TRUE),
+    PropertyDmg_Adj2022 = sum(PropertyDmg_Adj2022, na.rm = TRUE),
+    PropertyDmgPerCapita_Adj2022 = sum(PropertyDmgPerCapita_Adj2022, na.rm = TRUE),
+    .groups = 'drop' # This option drops the grouping structure afterwards
+  ) %>% 
+  mutate(
+    SHELDUS = 1
+  )
+
+```
+
+
+## Export Hurricane Data
+
+```{r eval=FALSE}
+
+write_csv(hurr_SHELDUS, here("data/SHELDUS/hurr_SHELDUS_df.csv"))
+
+```
+
+
+# Join with BDS
+
+```{r}
+
+# Function to load the bds_df dataset
+load_bds_df <- function(filepath) {
+  read_csv(filepath, col_types = cols(
+  year = col_double(),
+  st = col_character(),
+  cty = col_character(),
+  firms = col_double(),
+  estabs = col_double(),
+  emp = col_double(),
+  denom = col_double(),
+  estabs_entry = col_double(),
+  estabs_entry_rate = col_double(),
+  estabs_exit = col_double(),
+  estabs_exit_rate = col_double(),
+  job_creation = col_double(),
+  job_creation_births = col_double(),
+  job_creation_continuers = col_double(),
+  job_creation_rate_births = col_double(),
+  job_creation_rate = col_double(),
+  job_destruction = col_double(),
+  job_destruction_deaths = col_double(),
+  job_destruction_continuers = col_double(),
+  job_destruction_rate_deaths = col_double(),
+  job_destruction_rate = col_double(),
+  net_job_creation = col_double(),
+  net_job_creation_rate = col_double(),
+  reallocation_rate = col_double(),
+  firmdeath_firms = col_double(),
+  firmdeath_estabs = col_double(),
+  firmdeath_emp = col_double(),
+  FIPS_5 = col_character()
+  )) %>%
+    filter(year >= 1986 & year <= 2019)
+}
+
+# Function to join datasets and filter based on State FIPS codes
+join_and_filter <- function(bds_df, hurr_SHELDUS) {
+  bds_df %>%
+    left_join(hurr_SHELDUS, by = c("FIPS_5" = "county_FIPS", "year" = "Year")) %>%
+    mutate(pre_96 = if_else(year < 1996, 1, 0),
+           across(starts_with("PropertyDmg"), ~replace_na(.x, 0))
+    ) %>% 
+    select(!state_name:county_name)
+}
+
+```
+
+
+## Run Functions
+
+```{r}
+
+# Load and process the datasets
+bds_df_path <- here("data/BDS/bds_df.csv")
+
+bds_df <- load_bds_df(bds_df_path)
+
+```
+
+## Join
+
+```{r}
+
+# Join the datasets and filter
+hurrSHELDUS_bds_df <- join_and_filter(bds_df, hurr_SHELDUS)
+
+```
+
+### Export
+
+```{r eval=FALSE}
+
+write_csv(hurrSHELDUS_bds_df, here("data/SHELDUS/BDS_hurr_SHELDUS.csv"))
+
+```
+
+# Treatment Variable
+
+Setting the hurricane damage threshold at 80th percentile for now (based on some analysis I did on ChatGPT).
+
+```{r}
+
+# Define serious hurricane damage at 80the percentile of SHELDUS counties
+
+serious_threshold <- hurrSHELDUS_bds_df %>%
+  filter(SHELDUS == 1) %>%  # Filter rows where SHELDUS == 1
+  summarise(quantile_80 = quantile(PropertyDmgPerCapita_Adj2022, 0.5, na.rm = TRUE)) %>%
+  pull(quantile_80)  # Extract the quantile value
+
+# Check the calculated threshold
+serious_threshold
+
+```
+## 'treatment' & 'treatment_hurr'
+
+```{r}
+
+# Prepare the data
+hurrSHELDUS_bds_df <- hurrSHELDUS_bds_df %>%
+  # Define a serious flood
+  mutate(serious_hurr = if_else(PropertyDmgPerCapita_Adj2022 >= serious_threshold, 1, 0),
+         hurr = ifelse(PropertyDmgPerCapita_Adj2022 > 0, 1, 0)) %>%
+  # Group by county
+  group_by(FIPS_5) %>%
+  # Create the treatment variable
+  mutate(treatment = cummax(serious_hurr),
+         treatment_hurr = cummax(hurr)) %>%
+  ungroup()
+
+```
+
+## 'group' variable
+
+### Serious Threshold
+
+```{r}
+
+hurrSHELDUS_bds_df <- hurrSHELDUS_bds_df %>%
+  arrange(FIPS_5, year) %>%
+  group_by(FIPS_5) %>%
+  mutate(
+    first_serious_hurr_year = ifelse(any(serious_hurr == 1), min(year[serious_hurr == 1]), NA_real_),
+    group = ifelse(is.na(first_serious_hurr_year), 0, first_serious_hurr_year)
+  ) %>%
+  ungroup()
+
+```
+
+### Any Hurricane
+
+```{r}
+
+hurrSHELDUS_bds_df <- hurrSHELDUS_bds_df %>%
+  arrange(FIPS_5, year) %>%
+  group_by(FIPS_5) %>%
+  mutate(
+    first_hurr_year = ifelse(any(hurr == 1), min(year[hurr == 1]), NA_real_),
+    group_hurr = ifelse(is.na(first_hurr_year), 0, first_hurr_year)
+  ) %>%
+  ungroup()
+
+```
+
+# Other Data Management
+
+## Log Employment
+
+```{r}
+
+hurrSHELDUS_bds_df <- hurrSHELDUS_bds_df %>% 
+  mutate(
+    ln_emp = log(emp + 1)
+  )
+
+```
+
+
+## hurr_state variable
+
+```{r}
+
+hurr_states <-  read_csv(here("data/Labels/hurricane_states.csv"))
+
+```
+
+```{r}
+
+hurrSHELDUS_bds_df <- hurrSHELDUS_bds_df %>% 
+  left_join(hurr_states, by = c("st" = "FIPS"))
+
+```
+
+### Export Full Data
+
+```{r}
+
+# Full Data
+write_csv(hurrSHELDUS_bds_df, here("data/SHELDUS/BDS_hurr_SHELDUS.csv"))
+
+```
+
+# Hurr States Filter
+
+```{r}
+
+# Just Hurricane States
+hs_hurrSHELDUS_bds_df <- hurrSHELDUS_bds_df %>% 
+  filter(hurr_state == 1)
+
+```
+
+### Export Hurr States Data
+
+```{r}
+
+# Hurricane States Data
+write_csv(hs_hurrSHELDUS_bds_df, here("data/SHELDUS/hs_BDS_hurr_SHELDUS.csv"))
+
+```
+
+# Sample
+
+```{r eval=FALSE}
+
+sample_df <- hurrSHELDUS_bds_df %>%
+  slice_sample(n = 100)
+
+```
+
+```{r eval=FALSE}
+
+write_csv(sample_df, here("data/SHELDUS/sample_df.csv"))
+
+```

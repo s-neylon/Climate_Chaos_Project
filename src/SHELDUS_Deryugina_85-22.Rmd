@@ -1,0 +1,389 @@
+---
+title: "SHELDUS Hurricane Import"
+output: html_document
+date: "2024-03-28"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(here)
+library(tidyverse)
+library(stringr)
+library(haven)
+
+set.seed(1157)
+
+```
+
+# Notes
+
+##(3-28-24)
+
+Importing SHELDUS data. A lot of missing data and other analysis still to go through!
+
+##(4-2-24)
+
+I used ChatGPT to analyze just the hurricane damage data, and it seemed clean and nothing missing!
+
+##(4-3-24)
+
+### Dropping 80th percentile for median
+Okay, so, I have been doing analysis. I am not getting significant results with 80th percentile of damage, unless I drop Houston TX! While I don't want to data dredge, I do think it is legitimate to drop my serious threshold, to get more data. In fact, this should include more counties which didn't have an employment effect!
+
+I am doing the median instead.
+
+- Update: Median made it worse! So, I'm not data dredging haha. But Houston really is an outlier, I need to figure out how to deal with it.
+
+##(4-29-24)
+
+### Deryugina
+
+Now this is a Deryugina script!
+
+### All Hurricanes?
+
+No more serious hurricanes nonsense - if there is damage from a hurricane, it's a hurricane!
+
+##(6-7-24)
+
+!!NOTE!! - I haven't been able to get the new SHELDUS data yet, so I am going to code this, and THEN save it as '85-22'
+Because my earlier SHELDUS data didn't go back far enough, I got a new file from SHELDUS, going back to 1960, but aggregated by year. For the code dealing with 1985 onwards monthly data, see 'SHELDUS_Deryugina_85-22.Rmd'.
+
+### Status
+
+I needed to do a TA meeting, so I left off with 3 different Treatment Variable sections (numbered). I am taking the best of them, and creating the 3. Final Treatment version. I would like to use Chatgpt maybe, to put things into a function?
+
+# Import SHELDUS
+
+```{r}
+
+SHELDUS_df <- read_csv(here("data/SHELDUS/sheldus_1985-2022_hurr-flood-wind.csv"),
+                       col_types = cols(
+  `State Name` = col_character(),
+  `County Name` = col_character(),
+  `County FIPS` = col_character(),
+  Hazard = col_character(),
+  Year = col_double(),
+  Month = col_double(),
+  CropDmg = col_double(),
+  `CropDmg(ADJ 2022)` = col_double(),
+  `CropDmgPerCapita(ADJ 2022)` = col_double(),
+  PropertyDmg = col_double(),
+  `PropertyDmg(ADJ 2022)` = col_double(),
+  `PropertyDmgPerCapita(ADJ 2022)` = col_double(),
+  Injuries = col_double(),
+  InjuriesPerCapita = col_double(),
+  Fatalities = col_double(),
+  FatalitiesPerCapita = col_double(),
+  Duration_Days = col_double(),
+  Fatalities_Duration = col_double(),
+  Injuries_Duration = col_double(),
+  Property_Damage_Duration = col_double(),
+  Crop_Damage_Duration = col_double(),
+  Records = col_double())
+) %>% 
+  rename(
+  state_name = `State Name`,
+  county_name = `County Name`,
+  FIPS_5 = `County FIPS`,
+  CropDmg_Adj2022 = `CropDmg(ADJ 2022)`,
+  CropDmgPerCapita_Adj2022 = `CropDmgPerCapita(ADJ 2022)`,
+  PropertyDmg_Adj2022 = `PropertyDmg(ADJ 2022)`,
+  PropertyDmgPerCapita_Adj2022 = `PropertyDmgPerCapita(ADJ 2022)`
+  ) %>% 
+  mutate(
+    FIPS_5 = str_replace_all(FIPS_5, "'", "")
+  )
+
+```
+
+## Hurricane Data
+
+```{r}
+
+hurr_SHELDUS <- SHELDUS_df %>% 
+  select(state_name:Month | PropertyDmg:PropertyDmgPerCapita_Adj2022 | Duration_Days | Records) %>% 
+  filter(Hazard == "Hurricane/Tropical Storm" & Year >= 1969 & Year <= 2013)
+
+```
+
+## Sum damage by year
+
+```{r}
+
+hurr_SHELDUS <- hurr_SHELDUS %>%
+  group_by(FIPS_5, Year) %>%
+  summarise(
+    PropertyDmg = sum(PropertyDmg, na.rm = TRUE),
+    PropertyDmg_Adj2022 = sum(PropertyDmg_Adj2022, na.rm = TRUE),
+    PropertyDmgPerCapita_Adj2022 = sum(PropertyDmgPerCapita_Adj2022, na.rm = TRUE),
+    .groups = 'drop' # This option drops the grouping structure afterwards
+  ) %>% 
+  mutate(
+    SHELDUS = 1
+  )
+
+```
+
+### Drop SHELDUS Data
+
+```{r}
+
+rm(SHELDUS_df)
+
+```
+
+## Export Hurricane Data
+
+```{r eval=FALSE}
+
+write_csv(hurr_SHELDUS, here("data/SHELDUS/hurr_SHELDUS_1969-2013_df.csv"))
+
+```
+
+
+# Import Deryugina
+
+## DATA NOTE
+
+"allYRS_Final_dataset_processed.dta" - this is a dataset prepared in Stata, using the "AllYEARS_Dery_DataProc_justClean.do" do file, which is just the Deryugina cleaning file, modified so it works with my file structure.
+
+In other words,"allYRS_Final_dataset_processed.dta" is the data Deryugina ran her analysis on.
+
+## Import
+
+```{r}
+
+dery_df <- read_dta(here("data/Stata/allYRS_Final_dataset_processed.dta")) %>% 
+  # Character version of county_fips
+  mutate(FIPS_5 = as.character(county_fips)) %>% 
+  mutate(
+    FIPS_5 = case_when(
+      str_length(FIPS_5) == 5 ~ FIPS_5,
+      str_length(FIPS_5) == 4 ~ str_c("0", FIPS_5))
+    )
+
+```
+
+# Join
+
+```{r eval=TRUE}
+
+# Function to join datasets and filter
+join_and_filter <- function(dery_df, hurr_SHELDUS) {
+  dery_df %>%
+    left_join(hurr_SHELDUS, by = c("FIPS_5" = "FIPS_5", "year" = "Year")) %>%
+    mutate(pre_79 = if_else(year < 1979, 1, 0),
+           post_2002 = if_else(year > 2002, 1, 0),
+           across(starts_with("PropertyDmg"), ~replace_na(.x, 0))
+    )
+}
+
+```
+
+```{r eval=TRUE}
+
+# Join the datasets and filter
+hurrSHELDUS_dery_df <- join_and_filter(dery_df, hurr_SHELDUS)
+
+```
+
+# 1. Treatment Variables
+
+## 'treatment' variable
+
+'treatment' is an indicator for the post-treatment period for each treated county.
+
+```{r eval=FALSE}
+
+floodSHELDUS_bds_df <- floodSHELDUS_bds_df %>%
+  # Define a serious flood
+  mutate(serious_flood = if_else(PropertyDmgPerCapita_Adj2022 >= serious_threshold, 1, 0)) %>%
+  # Group by county
+  group_by(FIPS_5) %>%
+  # Create the treatment variable
+  mutate(treatment = cummax(serious_flood)) %>%
+  ungroup()
+
+```
+
+## 'group' variable
+
+Used for Callaway and Sant'Anna (2021) Group-Time ATT, which I didn't end up putting in the final paper, but I use the 'group' variable to build other treatment variables.
+
+'group' is the first year a county has a serious flood, and is 0 if never-treated.
+
+```{r eval=FALSE}
+
+floodSHELDUS_bds_df <- floodSHELDUS_bds_df %>%
+  arrange(FIPS_5, year) %>%
+  group_by(FIPS_5) %>%
+  mutate(
+    first_hurr_year = ifelse(any(serious_flood == 1), min(year[serious_flood == 1]), NA_real_),
+    group = ifelse(is.na(first_hurr_year), 0, first_hurr_year)
+  ) %>%
+  ungroup()
+
+```
+
+## 'time_to_treat' & 'treat'
+
+Variables for 'fixest' package.
+
+'time_to_treat' is the event study, with -1000 for never-treated counties (following 'fixest' documentation).
+
+'treat' is a dummy for whether a county is ever treated.
+
+```{r eval=FALSE}
+
+flood_df <- flood_df %>% 
+  mutate(
+    time_to_treat = ifelse(group > 0, year - group, -1000),
+    treat = ifelse(group > 0, 1, 0)
+  )
+
+```
+
+## 'treatment_post'
+
+'treatment_post' is an interaction of 'treatment' (the post-treatment period indicator) and 'treat' (the ever-treated indicator). The coefficient of this interaction is the traditional difference-in-differences ATT estimate.
+
+```{r eval=FALSE}
+
+ln_emp_flood_df$treatment_post <- ln_emp_flood_df$treatment * ln_emp_flood_df$treat
+
+```
+
+# 2. Treatment Variable
+
+Setting the hurricane damage threshold at 80th percentile for now (based on some analysis I did on ChatGPT).
+
+```{r}
+
+# Define serious hurricane damage at 80the percentile of SHELDUS counties
+
+serious_threshold <- hurrSHELDUS_bds_df %>%
+  filter(SHELDUS == 1) %>%  # Filter rows where SHELDUS == 1
+  summarise(quantile_80 = quantile(PropertyDmgPerCapita_Adj2022, 0.5, na.rm = TRUE)) %>%
+  pull(quantile_80)  # Extract the quantile value
+
+# Check the calculated threshold
+serious_threshold
+
+```
+## 'treatment' & 'treatment_hurr'
+
+```{r}
+
+# Prepare the data
+hurrSHELDUS_bds_df <- hurrSHELDUS_bds_df %>%
+  # Define a serious flood
+  mutate(serious_hurr = if_else(PropertyDmgPerCapita_Adj2022 >= serious_threshold, 1, 0),
+         hurr = ifelse(PropertyDmgPerCapita_Adj2022 > 0, 1, 0)) %>%
+  # Group by county
+  group_by(FIPS_5) %>%
+  # Create the treatment variable
+  mutate(treatment = cummax(serious_hurr),
+         treatment_hurr = cummax(hurr)) %>%
+  ungroup()
+
+```
+
+## 'group' variable
+
+### Serious Threshold
+
+```{r}
+
+hurrSHELDUS_bds_df <- hurrSHELDUS_bds_df %>%
+  arrange(FIPS_5, year) %>%
+  group_by(FIPS_5) %>%
+  mutate(
+    first_serious_hurr_year = ifelse(any(serious_hurr == 1), min(year[serious_hurr == 1]), NA_real_),
+    group = ifelse(is.na(first_serious_hurr_year), 0, first_serious_hurr_year)
+  ) %>%
+  ungroup()
+
+```
+
+### Any Hurricane
+
+```{r}
+
+hurrSHELDUS_bds_df <- hurrSHELDUS_bds_df %>%
+  arrange(FIPS_5, year) %>%
+  group_by(FIPS_5) %>%
+  mutate(
+    first_hurr_year = ifelse(any(hurr == 1), min(year[hurr == 1]), NA_real_),
+    group_hurr = ifelse(is.na(first_hurr_year), 0, first_hurr_year)
+  ) %>%
+  ungroup()
+
+```
+
+# 3. Final Treatment
+
+Serious Threshold at Median
+
+```{r}
+
+# Define serious hurricane damage at 80the percentile of SHELDUS counties
+
+serious_threshold <- hurrSHELDUS_bds_df %>%
+  filter(SHELDUS == 1) %>%  # Filter rows where SHELDUS == 1
+  summarise(quantile_80 = quantile(PropertyDmgPerCapita_Adj2022, 0.5, na.rm = TRUE)) %>%
+  pull(quantile_80)  # Extract the quantile value
+
+# Check the calculated threshold
+serious_threshold
+
+```
+
+# Other Data Management
+
+
+### Export Full Data
+
+```{r}
+
+# Full Data
+write_csv(hurrSHELDUS_dery_df, here("data/SHELDUS/Deryugina_hurr_SHELDUS.csv"))
+
+```
+
+# Hurr States Filter
+
+```{r}
+
+# Just Hurricane States
+hs_hurrSHELDUS_dery_df <- hurrSHELDUS_dery_df %>% 
+  filter(sample_hurr_state == 1)
+
+```
+
+### Export Hurr States Data
+
+```{r eval=FALSE}
+
+# Hurricane States Data
+write_csv(hs_hurrSHELDUS_dery_df, here("data/SHELDUS/hs_Deryugina_hurr_SHELDUS.csv"))
+
+```
+
+# Sample
+
+```{r eval=FALSE}
+
+sample_df <- hurrSHELDUS_dery_df %>%
+  slice_sample(n = 100)
+
+```
+
+```{r eval=FALSE}
+
+write_csv(sample_df, here("data/SHELDUS/sample_df.csv"))
+
+```
+
+

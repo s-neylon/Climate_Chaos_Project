@@ -5,10 +5,10 @@
 *** WORKING DIRECTORY *********
 
 ** Home Computer
-cd "C:\Users\samue\OneDrive - City University of New York\CUNY! (Cloud)\R\Hurricanes"
+* cd "C:\Users\samue\OneDrive - City University of New York\CUNY! (Cloud)\R\Hurricanes_R"
 
 ** LMIS Computer
-* cd "C:\Users\sneylon\OneDrive - City University of New York\CUNY! (Cloud)\Stata\BDS"
+cd "C:\Users\sneylon\OneDrive - City University of New York\CUNY! (Cloud)\R\Hurricanes_R"
 
 *******************************
 

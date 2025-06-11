@@ -380,6 +380,19 @@ flood_df <- flood_df %>%
 
 ```
 
+## time_to_treat & treat
+
+```{r}
+
+flood_df <- flood_df %>% 
+  mutate(
+    time_to_treat = ifelse(group > 0, year - group, -1000),
+    treat = ifelse(group > 0, 1, 0)
+  )
+
+```
+
+
 ## Check
 
 ### Miss Counts
@@ -874,7 +887,7 @@ emp_1 <- fect(emp ~ treatment,
                 se = TRUE, 
                 nboots = 200, 
                 parallel = TRUE,
-                cores = 4) # 4 for LMIS GC Computer
+                cores = 6) # 6 for home PC
 
 ```
 
@@ -912,7 +925,7 @@ ln_emp_1 <- fect(ln_emp ~ treatment,
                 se = TRUE, 
                 nboots = 200, 
                 parallel = TRUE,
-                cores = 4) # 4 for LMIS GC Computer
+                cores = 6) # 6 for home PC
 
 ```
 
@@ -927,6 +940,14 @@ print(ln_emp_1)
 ```{r eval=FALSE}
 
 plot(ln_emp_1, main = "Estimated ATT (IFEct)")
+
+```
+
+### Plot xlim
+
+```{r eval=FALSE}
+
+plot(ln_emp_1, xlim = c(-10, 10), main = "Estimated ATT (IFEct)")
 
 ```
 
@@ -954,15 +975,17 @@ library(fixest)
 
 ```
 
+## *ln_emp Model
+
 ```{r eval=FALSE}
 
-feols_ln_emp <- feols(ln_emp ~ i(year, treatment, ref = "group") | FIPS + year, emp_flood_df)
+feols_ln_emp <- feols(ln_emp ~ i(time_to_treat, treat, ref = c(-1, -1000)) | FIPS_5 + year, emp_flood_df, cluster = "FIPS_5")
 
 ```
 
 ```{r eval=FALSE}
 
-iplot(feols_ln_emp)
+iplot(feols_ln_emp, xlim = c(-10, 10))
 
 ```
 
@@ -972,6 +995,107 @@ summary(feols_ln_emp)
 
 ```
 
+```{r eval=FALSE}
+
+print(feols_ln_emp)
+
+```
+### Exploration
+
+```{r eval=FALSE}
+
+
+
+```
+
+## Sun Abraham Version - ln_emp
+
+```{r eval=FALSE}
+
+sunab_ln_emp_model <- feols(ln_emp ~ sunab(group, year) | FIPS_5 + year, emp_flood_df) 
+
+```
+
+```{r eval=FALSE}
+
+iplot(sunab_ln_emp_model)
+
+```
+
+```{r eval=FALSE}
+
+summary(sunab_ln_emp_model, agg = "att")
+
+```
+
+```{r eval=FALSE}
+
+coefplot(feols_ln_emp)
+
+```
+
+## ln_emp 2
+
+```{r eval=FALSE}
+
+feols_ln_emp.2 <- feols(ln_emp ~ i(year, treat) | FIPS_5 + year, emp_flood_df)
+
+```
+
+```{r eval=FALSE}
+
+iplot(feols_ln_emp.2)
+
+```
+
+## ln_emp 3
+
+```{r eval=FALSE}
+
+emp_flood_df$treatment_post <- emp_flood_df$treatment * emp_flood_df$treat
+
+```
+
+```{r eval=FALSE}
+
+feols_ln_emp.3 <- feols(ln_emp ~ treatment_post | FIPS_5 + year, emp_flood_df, cluster = "FIPS_5")
+
+```
+
+```{r eval=FALSE}
+
+summary(feols_ln_emp.3)
+
+```
+
+## base_stagg
+
+```{r eval=FALSE}
+
+data("base_stagg")
+
+```
+
+# OLS Regression
+
+```{r eval=FALSE}
+
+emp_flood_df$treatment_post <- emp_flood_df$treatment * emp_flood_df$treat
+
+```
+
+```{r eval=FALSE}
+
+ols.ln_emp.model <- lm(ln_emp ~ treatment_post, data = emp_flood_df)
+
+```
+
+```{r eval=FALSE}
+
+summary(ols.ln_emp.model)
+
+```
+
 # Data Exploration
 
 ```{r eval=FALSE}
@@ -985,5 +1109,27 @@ flood_df %>% group_by(st) %>% count(st)
 ```{r eval=FALSE}
 
 flood_df %>% group_by(st) %>% count(st)
+
+```
+
+# Panel Check
+
+```{r eval=FALSE}
+
+# Group the data by FIPS code
+grouped_data <- emp_flood_df %>%
+  filter(group > 0) %>% # Filter for treated counties
+  group_by(FIPS_5)
+
+# Get a list of unique FIPS codes
+unique_fips <- unique(emp_flood_df$FIPS_5)
+
+# Sample a number of unique FIPS codes (e.g., 5 FIPS codes)
+sampled_fips <- sample(unique_fips, 20)
+
+# Filter the original grouped data to only include the sampled FIPS codes
+smpl_data <- grouped_data %>%
+  filter(FIPS_5 %in% sampled_fips) %>%
+  ungroup() # Optionally ungroup the data frame
 
 ```

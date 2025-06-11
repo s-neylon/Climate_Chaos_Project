@@ -91,7 +91,7 @@ hurr_df <- hurr_df %>%
 
 Don't forget to put them back in!!! But I want to see what happens if I drop Harris County.
 
-```{r}
+```{r eval=FALSE}
 
 hurr_noHOUST <- hurr_df %>% 
   filter(FIPS_5 != 48201)

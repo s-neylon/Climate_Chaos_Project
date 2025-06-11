@@ -1,0 +1,667 @@
+---
+title: "SHELDUS Deryugina Analysis"
+author: "Sam Neylon"
+date: '2024-08-17'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(here)
+library(tidyverse)
+library(stringr)
+library(did)
+
+# library(scales)
+
+set.seed(7008)
+
+```
+
+
+
+# Notes
+
+##(8-17-24)
+
+### My goals:
+  1. Dery Outcomes + Dery Treats + SN Methods: See if I get the same results as Deryugina, using her outcomes, her hurricanes (wind speed), but the methods I am using.
+    1.a: Maybe don't use covariates at first, which will give you different outcomes than Deryugina potentially.
+  2. Dery Outcomes + SHELDUS Treats + SN Methods: See how the outcomes change using the SHELDUS hurricanes (any hurricane damage).
+  3. Dery Covariates + Dery Outcomes + Dery Treats + SN Methods: Add in the covariates!
+  
+Potential:
+  * BDS outcomes?: Should I experiment with seeing how the BDS results differ from Deryugina
+  * Wind speed and Damage: Could be interesting!
+  
+Other Goals:
+
+  * Figure out how to estimate effects for specific time periods - 10 years, 5 years - inside the 'did' and other packages.
+  
+  
+##(8-18-24)
+
+• 1979 - many more SHELDUS hurricanes
+		○ 526 counties affected
+			§ Next greatest is 85!
+		!!!!! I created a version of the data without 1979! If I want to change it back, I need to change it everywhere below!
+
+• BIG NOTE: 1979 wasn't really the issue…
+			§ Or at least, another year became a big year (but ~350 counties, not 500 counties)
+			§ Issue goes deeper
+
+• Fixes for SHELDUS estimates - should I reverse these?
+		○ Changed 'est_method' to "reg"
+			§ This was because I think the IPW part of the doubly-robust estimation was the glm that wasn't converging.
+		○ Na.rm for aggte()
+			§ For the SHELDUS estimation, I added 'na.rm', but I'd rather figure out why there is missing?
+
+• Interesting finding:
+		○ There is an employment effect for damage, but not for wind speed!
+
+## Deryugina Analysis Notes:
+
+NOTE: Deryugina uses spatial OLS for her regressions.
+
+- She gets rid of wind_speed in her cleaned data.
+
+# Import 79
+
+## 1979!
+
+The SHELDUS data in 1979 is odd - splitting damage between many more counties (526) than any other year (the next biggest year is 85 counties).
+
+Until I can figure out what the deal is, I am going create a special version of the data which calculates the first hurricane year without 1979.
+
+I have created this different dataset: SHELDUS_Deryugina79.rds
+
+```{r}
+
+df <- readRDS(here("data/SHELDUS/SHELDUS_Deryugina79.rds"))
+
+```
+
+
+
+# Dery Outcomes + Dery Treats + SN Methods
+
+Dery Outcomes + Dery Treats + SN Methods: See if I get the same results as Deryugina, using her outcomes, her hurricanes (wind speed), but the methods I am using.
+
+## Govt Transfers
+
+```{r eval=FALSE}
+
+gov_t_D <- att_gt(yname="log_curr_trans_ind_gov_pc",
+                  tname="year",
+                  idname="county_fips",
+                  gname="group_Dery",
+                  data=df,
+                  control_group = "notyettreated",
+                  cores = 4)
+
+```
+
+```{r eval=FALSE}
+
+  gov_t_D_es10 <- aggte(gov_t_D, type="dynamic", min_e = -10, max_e = 10, balance_e = 10)
+
+```
+
+```{r eval=FALSE}
+
+summary(gov_t_D_es10)
+
+```
+
+```{r eval=FALSE}
+
+  ggdid(gov_t_D_es10, xgap = 2)
+
+```
+
+```{r eval=FALSE}
+
+  gov_t_D_att10 <- aggte(gov_t_D, type="dynamic", min_e = 1, max_e = 10, balance_e = 10)
+
+```
+
+```{r eval=FALSE}
+
+summary(gov_t_D_att10)
+
+```
+
+## Biz Transfers
+
+NOTE: 8045 rows dropped for missing data. This mostly aligns with Deryugina descriptives (pg 37), even though there are less missing than there should be (I probably dropped some during cleaning):
+
+Per capita transfers from gov. obvs: 49,245
+Per capita transfers from bus. obvs: 40,027
+
+```{r eval=FALSE}
+
+biz_t_D <- att_gt(yname="log_curr_trans_ind_bus_pc",
+                  tname="year",
+                  idname="county_fips",
+                  gname="group_Dery",
+                  data=df,
+                  control_group = "notyettreated",
+                  cores = 4)
+
+```
+
+```{r eval=FALSE}
+
+  biz_t_D_es10 <- aggte(biz_t_D, type="dynamic", min_e = -10, max_e = 10, balance_e = 10)
+
+```
+
+```{r eval=FALSE}
+
+summary(biz_t_D_es10)
+
+```
+
+```{r eval=FALSE}
+
+  ggdid(biz_t_D_es10, xgap = 2)
+
+```
+
+```{r eval=FALSE}
+
+  biz_t_D_att10 <- aggte(biz_t_D, type="dynamic", min_e = 1, max_e = 10, balance_e = 10)
+
+```
+
+```{r eval=FALSE}
+
+summary(biz_t_D_att10)
+
+```
+
+## Emp Rate (Total Adult Population)
+
+```{r eval=FALSE}
+
+emp_tot_adult_D <- att_gt(yname="emp_rate_tot_adult",
+                  tname="year",
+                  idname="county_fips",
+                  gname="group_Dery",
+                  data=df,
+                  control_group = "notyettreated",
+                  cores = 4)
+
+```
+
+```{r eval=FALSE}
+
+  emp_tot_adult_D_es10 <- aggte(emp_tot_adult_D, type="dynamic", min_e = -10, max_e = 10, balance_e = 10)
+
+```
+
+```{r eval=FALSE}
+
+summary(emp_tot_adult_D_es10)
+
+```
+
+```{r eval=FALSE}
+
+  ggdid(emp_tot_adult_D_es10, xgap = 2)
+
+```
+
+```{r eval=FALSE}
+
+  emp_tot_adult_D_att10 <- aggte(emp_tot_adult_D, type="dynamic", min_e = 1, max_e = 10, balance_e = 10)
+
+```
+
+```{r eval=FALSE}
+
+summary(emp_tot_adult_D_att10)
+
+```
+
+## Avg Wages
+
+```{r eval=FALSE}
+
+avg_wage_D <- att_gt(yname="log_avg_wage_sal_disb",
+                  tname="year",
+                  idname="county_fips",
+                  gname="group_Dery",
+                  data=df,
+                  control_group = "notyettreated",
+                  cores = 4)
+
+```
+
+```{r eval=FALSE}
+
+  avg_wage_D_es10 <- aggte(avg_wage_D, type="dynamic", min_e = -10, max_e = 10, balance_e = 10)
+
+```
+
+```{r eval=FALSE}
+
+summary(avg_wage_D_es10)
+
+```
+
+```{r eval=FALSE}
+
+  ggdid(avg_wage_D_es10, xgap = 2)
+
+```
+
+```{r eval=FALSE}
+
+  avg_wage_D_att10 <- aggte(avg_wage_D, type="dynamic", min_e = 1, max_e = 10, balance_e = 10)
+
+```
+
+```{r eval=FALSE}
+
+summary(avg_wage_D_att10)
+
+```
+
+# SHELDUS Hurricanes + Dery Outcomes + Dery Treats + SN Methods
+
+SHELDUS Hurricanes + Dery Outcomes + Dery Treats + SN Methods: Using Deryugina outcomes, SHELDUS hurricanes (any hurricane damage), but the methods I am using.
+
+## Govt Transfers
+
+```{r eval=FALSE}
+
+gov_t_SH <- att_gt(yname="log_curr_trans_ind_gov_pc",
+                  tname="year",
+                  idname="county_fips",
+                  gname="group_SHLD",
+                  data=df,
+                  control_group = "notyettreated",
+                  cores = 4,
+                  pl = TRUE,
+                  est_method = "reg")
+
+```
+
+```{r eval=FALSE}
+
+  gov_t_SH_es10 <- aggte(gov_t_SH, type="dynamic", min_e = -10, max_e = 10, balance_e = 10, na.rm = TRUE)
+
+```
+
+```{r eval=FALSE}
+
+summary(gov_t_SH_es10)
+
+```
+
+```{r eval=FALSE}
+
+  ggdid(gov_t_SH_es10, xgap = 2)
+
+```
+
+```{r eval=FALSE}
+
+  gov_t_SH_att10 <- aggte(gov_t_SH, type="dynamic", min_e = 1, max_e = 10, balance_e = 10)
+
+```
+
+```{r eval=FALSE}
+
+summary(gov_t_SH_att10)
+
+```
+
+## Biz Transfers
+
+```{r eval=FALSE}
+
+biz_t_SH <- att_gt(yname="log_curr_trans_ind_bus_pc",
+                  tname="year",
+                  idname="county_fips",
+                  gname="group_SHLD",
+                  data=df,
+                  control_group = "notyettreated",
+                  cores = 4)
+
+```
+
+```{r eval=FALSE}
+
+  biz_t_SH_es10 <- aggte(biz_t_SH, type="dynamic", min_e = -10, max_e = 10, balance_e = 10)
+
+```
+
+```{r eval=FALSE}
+
+summary(biz_t_SH_es10)
+
+```
+
+```{r eval=FALSE}
+
+  ggdid(biz_t_SH_es10, xgap = 2)
+
+```
+
+```{r eval=FALSE}
+
+  biz_t_SH_att10 <- aggte(biz_t_SH, type="dynamic", min_e = 1, max_e = 10, balance_e = 10)
+
+```
+
+```{r eval=FALSE}
+
+summary(biz_t_SH_att10)
+
+```
+
+## Emp Rate (Total Adult Population)
+
+```{r eval=FALSE}
+
+emp_tot_adult_SH <- att_gt(yname="emp_rate_tot_adult",
+                  tname="year",
+                  idname="county_fips",
+                  gname="group_SHLD",
+                  data=df,
+                  control_group = "notyettreated",
+                  cores = 4,
+                  pl = TRUE,
+                  est_method = "reg")
+
+```
+
+```{r eval=FALSE}
+
+  emp_tot_adult_SH_es10 <- aggte(emp_tot_adult_SH, type="dynamic", min_e = -10, max_e = 10, balance_e = 10, na.rm = TRUE)
+
+```
+
+```{r eval=FALSE}
+
+summary(emp_tot_adult_SH_es10)
+
+```
+
+```{r eval=FALSE}
+
+  ggdid(emp_tot_adult_SH_es10, xgap = 2)
+
+```
+
+```{r eval=FALSE}
+
+  emp_tot_adult_SH_att10 <- aggte(emp_tot_adult_SH, type="dynamic", min_e = 1, max_e = 10, balance_e = 10)
+
+```
+
+```{r eval=FALSE}
+
+summary(emp_tot_adult_SH_att10)
+
+```
+
+## Avg Wages
+
+```{r eval=FALSE}
+
+avg_wage_SH <- att_gt(yname="log_avg_wage_sal_SHisb",
+                  tname="year",
+                  idname="county_fips",
+                  gname="group_SHLD",
+                  data=df,
+                  control_group = "notyettreated",
+                  cores = 4)
+
+```
+
+```{r eval=FALSE}
+
+  avg_wage_SH_es10 <- aggte(avg_wage_SH, type="dynamic", min_e = -10, max_e = 10, balance_e = 10)
+
+```
+
+```{r eval=FALSE}
+
+summary(avg_wage_SH_es10)
+
+```
+
+```{r eval=FALSE}
+
+  ggdid(avg_wage_SH_es10, xgap = 2)
+
+```
+
+```{r eval=FALSE}
+
+  avg_wage_SH_att10 <- aggte(avg_wage_SH, type="dynamic", min_e = 1, max_e = 10, balance_e = 10)
+
+```
+
+```{r eval=FALSE}
+
+summary(avg_wage_SH_att10)
+
+```
+
+
+
+
+
+
+
+
+
+
+
+# Dery Covariates + Dery Outcomes + Dery Treats + SN Methods
+
+## Deryugina Equation 1
+
+[Not the version she uses in the paper, which is a spatial regression]
+
+* Note: if you do not have ols_spatial_HAC, you can obtain the paper's point estimates with standard errors clustered by county by running the following code (currently commented out)
+
+* reghdfe `outcome' hurricane hurr_*, absorb(i.county_fips i.year#i.coastal i.year#c.land_area1970 i.year#c.log_pop1969 i.year#c.frac_young1969 i.year#c.frac_old1969 i.year#c.frac_black1969 i.year#c.log_wage_pc1969 i.year#c.emp_rate1969) vce(cluster county_fips)
+
+# Data Exploration
+
+## Descriptives
+
+### Continuous
+
+```{r eval=FALSE}
+
+library(scales)
+
+```
+
+```{r eval=FALSE}
+
+cont_desc_fn <- function(data, variables) {
+  stats <- data %>%
+    summarise(across(all_of(variables), 
+                    list(N = ~sum(!is.na(.)),
+                          Mean = ~round(mean(., na.rm = TRUE), 2),
+                          P25 = ~round(quantile(., 0.25, na.rm = TRUE), 2),
+                          P50 = ~round(quantile(., 0.50, na.rm = TRUE), 2),
+                          P75 = ~round(quantile(., 0.75, na.rm = TRUE), 2),
+                          P95 = ~round(quantile(., 0.95, na.rm = TRUE), 2),
+                          Max = ~round(max(., na.rm = TRUE), 2)),
+                     .names = "{.col}__{.fn}"))
+  
+  stats_long <- stats %>%
+    pivot_longer(cols = everything(), names_to = c("Variable", "Statistic"), 
+                 names_sep = "__") %>%
+    pivot_wider(names_from = Statistic, values_from = value)
+  
+  return(stats_long)
+}
+
+# Example usage
+# Assuming df is your data frame and you have a list of variables you want to summarize
+#cont_vars <- c("emp", "ln_emp")
+cont_vars_noZero <- c("PropertyDmg_Adj2022", "PropertyDmgPerCapita_Adj2022")
+
+cont_tbl_nZ <- df %>% 
+  filter(PropertyDmg_Adj2022 > 0) %>% 
+  cont_desc_fn(data = ., variables = cont_vars_noZero)
+
+#cont_tbl <- cont_desc_fn(ln_emp_flood_df, cont_vars)
+
+#cont_tbl_full <- bind_rows(cont_tbl, cont_tbl_nZ)
+cont_tbl_full <- cont_tbl_nZ
+
+cont_tbl_full <- cont_tbl_full %>%
+  mutate(across(-c(Variable, N), ~case_when(
+    #Variable == "emp" ~ paste0(comma(. / 1000, accuracy = 0.01), "k"),
+    #Variable == "ln_emp" ~ paste0(comma(., accuracy = 0.01)),
+    Variable == "PropertyDmg_Adj2022" ~ paste0("$", comma(. / 1000, accuracy = 0.01), "k"),
+    Variable == "PropertyDmgPerCapita_Adj2022" ~ paste0("$", comma(., accuracy = 0.01)))
+  ))
+
+```
+
+```{r eval=FALSE}
+
+# Print the summary table
+print(cont_tbl_full)
+
+```
+
+###1979
+
+```{r eval=FALSE}
+
+cont_desc_fn <- function(data, variables) {
+  stats <- data %>%
+    summarise(across(all_of(variables), 
+                    list(N = ~sum(!is.na(.)),
+                          Mean = ~round(mean(., na.rm = TRUE), 2),
+                          P25 = ~round(quantile(., 0.25, na.rm = TRUE), 2),
+                          P50 = ~round(quantile(., 0.50, na.rm = TRUE), 2),
+                          P75 = ~round(quantile(., 0.75, na.rm = TRUE), 2),
+                          P95 = ~round(quantile(., 0.95, na.rm = TRUE), 2),
+                          Max = ~round(max(., na.rm = TRUE), 2)),
+                     .names = "{.col}__{.fn}"))
+  
+  stats_long <- stats %>%
+    pivot_longer(cols = everything(), names_to = c("Variable", "Statistic"), 
+                 names_sep = "__") %>%
+    pivot_wider(names_from = Statistic, values_from = value)
+  
+  return(stats_long)
+}
+
+# Example usage
+# Assuming df is your data frame and you have a list of variables you want to summarize
+#cont_vars <- c("emp", "ln_emp")
+cont_vars_noZero <- c("PropertyDmg_Adj2022", "PropertyDmgPerCapita_Adj2022")
+
+cont_tbl_nZ <- df %>% 
+  filter(group_SHLD == 1979 & year == 1979) %>% 
+  filter(PropertyDmg_Adj2022 > 0) %>% 
+  cont_desc_fn(data = ., variables = cont_vars_noZero)
+
+#cont_tbl <- cont_desc_fn(ln_emp_flood_df, cont_vars)
+
+#cont_tbl_full <- bind_rows(cont_tbl, cont_tbl_nZ)
+cont_tbl_full <- cont_tbl_nZ
+
+cont_tbl_full <- cont_tbl_full %>%
+  mutate(across(-c(Variable, N), ~case_when(
+    #Variable == "emp" ~ paste0(comma(. / 1000, accuracy = 0.01), "k"),
+    #Variable == "ln_emp" ~ paste0(comma(., accuracy = 0.01)),
+    Variable == "PropertyDmg_Adj2022" ~ paste0("$", comma(. / 1000, accuracy = 0.01), "k"),
+    Variable == "PropertyDmgPerCapita_Adj2022" ~ paste0("$", comma(., accuracy = 0.01)))
+  ))
+
+```
+
+```{r eval=FALSE}
+
+# Print the summary table
+print(cont_tbl_full)
+
+```
+
+## 1979 SHELDUS Issue
+
+```{r eval=FALSE}
+
+# 1979 exploration
+
+SH_79 <- df %>%
+  #filter(group_SHLD %in% c(1979, 1980) & year %in% c(1979, 1980)) %>% 
+  filter(year %in% c(1979, 1980, 1981)) %>% 
+  select(FIPS_5, state_name, county_name_SHELDUS, PropertyDmg_Adj2022, PropertyDmgPerCapita_Adj2022, county_fips, year, state_fips, hurricane, central_wind_speed)
+
+write_csv(SH_79, here("data/data_check/SHELD-Dery_1979.csv"))
+
+```
+
+## County Count Check
+
+How many counties per year?
+
+```{r eval=FALSE}
+
+# Assuming your data frame is named 'df'
+df %>%
+  # Group by the 'year' variable
+  group_by(year) %>%
+  # Count the number of distinct counties (FIPS_5) in each year
+  summarize(county_count = n_distinct(FIPS_5))
+
+```
+
+## Group Counts
+
+### Deryugina
+
+```{r eval=FALSE}
+
+df %>%
+  # Group by the 'group_SHLD' variable
+  group_by(group_Dery) %>%
+  # Count the number of counties in each 'group_SHLD' year
+  summarize(county_count = n_distinct(FIPS_5))
+
+```
+
+### SHELDUS
+
+```{r eval=FALSE}
+
+df %>%
+  # Group by the 'group_SHLD' variable
+  group_by(group_SHLD) %>%
+  # Count the number of counties in each 'group_SHLD' year
+  summarize(county_count = n_distinct(FIPS_5))
+
+```
+
+## Non-Convergence
+
+Get a data set saved that you can put into ChatGPT, to figure out why your data might not be converging.
+
+```{r eval=FALSE}
+
+non_converge_df <- df %>% select(year, county_fips, state_fips, group_SHLD, any_hurrDMG_SHLD, PropertyDmgPerCapita_Adj2022, log_curr_trans_ind_gov_pc)
+
+```
+
+```{r eval=FALSE}
+
+write_csv(non_converge_df, here("data/data_check/non_converge.csv"))
+
+```

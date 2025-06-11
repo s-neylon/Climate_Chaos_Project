@@ -14,7 +14,13 @@
 # Tab-Delim Data Files (only in data/ directory)
 data/**/*.txt
 
+# Zip Files
 *.zip
+
+*.gz
+
+# Parquet files
+*.parquet
 
 # No Shapefiles
 *.dbf
@@ -41,6 +47,10 @@ data/**/*.txt
 
 *.docx 
 
+# Directories
+## FEMA
+data/FEMA/
+
 # Created by https://www.toptal.com/developers/gitignore/api/r
 # Edit at https://www.toptal.com/developers/gitignore?templates=r
 
@@ -54,6 +64,9 @@ data/**/*.txt
 
 # User-specific files
 .Ruserdata
+
+# R data files
+*.rds
 
 # Example code in package build process
 *-Ex.R
